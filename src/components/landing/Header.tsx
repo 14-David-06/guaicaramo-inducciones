@@ -12,7 +12,13 @@ const TABS = [
 
 type CursorPos = { left: number; width: number; opacity: number };
 
-export function Header({ showNav = true }: { showNav?: boolean } = {}) {
+export function Header({
+  showNav = true,
+  onModulosClick,
+}: {
+  showNav?: boolean;
+  onModulosClick?: () => void;
+} = {}) {
   const [pos, setPos] = useState<CursorPos>({ left: 0, width: 0, opacity: 0 });
 
   return (
@@ -34,7 +40,12 @@ export function Header({ showNav = true }: { showNav?: boolean } = {}) {
           onMouseLeave={() => setPos((p) => ({ ...p, opacity: 0 }))}
         >
           {TABS.map((t) => (
-            <NavTab key={t.href} href={t.href} setPos={setPos}>
+            <NavTab
+              key={t.href}
+              href={t.href}
+              setPos={setPos}
+              onClick={t.label === "Módulos" ? onModulosClick : undefined}
+            >
               {t.label}
             </NavTab>
           ))}
@@ -59,10 +70,12 @@ function NavTab({
   children,
   href,
   setPos,
+  onClick,
 }: {
   children: React.ReactNode;
   href: string;
   setPos: (p: CursorPos) => void;
+  onClick?: () => void;
 }) {
   const ref = useRef<HTMLLIElement | null>(null);
   return (
@@ -75,7 +88,19 @@ function NavTab({
         setPos({ width, opacity: 1, left: ref.current.offsetLeft });
       }}
     >
-      <a href={href}>{children}</a>
+      <a
+        href={href}
+        onClick={
+          onClick
+            ? (e) => {
+                /* scroll to section first, then open modal */
+                onClick();
+              }
+            : undefined
+        }
+      >
+        {children}
+      </a>
     </li>
   );
 }

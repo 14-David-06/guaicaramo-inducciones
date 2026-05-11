@@ -1,5 +1,11 @@
-import type { ComponentType } from "react";
+"use client";
+
+import { useEffect, useRef, useState, type ComponentType } from "react";
 import Link from "next/link";
+import { MODULES as MODULE_DATA, type ModuleData } from "@/lib/modules-data";
+
+export type { TopicGroup, ModuleData } from "@/lib/modules-data";
+export { MODULES } from "@/lib/modules-data";
 
 /* --------------------- per-module SVG animations --------------------- */
 
@@ -323,180 +329,20 @@ function AnimSistemas() {
   );
 }
 
-/* --------------------- module data --------------------- */
+/* --------------------- merge data + animations --------------------- */
 
-export type TopicGroup = {
-  title: string;
-  items: string[];
-};
+type Module = ModuleData & { Anim: ComponentType };
 
-export type Module = {
-  slug: string;
-  num: string;
-  title: string;
-  duration: string;
-  chip: string;
-  Anim: ComponentType;
-  bg: string;
-  bgPosition?: string;
-  span: 4 | 6;
-  blurb: string;
-  topics: string[];
-  topicGroups?: TopicGroup[];
-  objective: string;
-};
-
-export const MODULES: Module[] = [
-  {
-    slug: "introduccion",
-    num: "01",
-    title: "Introducción",
-    duration: "10 min",
-    chip: "Propósito",
-    Anim: AnimIntro,
-    bg: "/vlcsnap-2026-04-27-09h11m19s291.png",
-    span: 6,
-    blurb:
-      "Conozca quiénes somos, de dónde venimos y qué nos hace únicos. Esta es la puerta de entrada a la casa Guaicaramo.",
-    topics: [
-      "Generalidades",
-      "Misión y Visión",
-      "Principales procesos",
-      "Valores Corporativos / Código de Ética y Conducta",
-      "RIT (Reglamento Interno de Trabajo)",
-      "Sagrilaft y Protección de datos personales",
-    ],
-    objective:
-      "Comprender el propósito de Guaicaramo y los seis pilares que sostienen cada decisión.",
-  },
-  {
-    slug: "bienestar-social",
-    num: "02",
-    title: "Bienestar integral",
-    duration: "20 min",
-    chip: "Comunidad",
-    Anim: AnimBienestar,
-    bg: "/Gente%20de%20Campo.jpg.jpeg",
-    span: 6,
-    blurb:
-      "Cuidar a la gente es cuidar a Guaicaramo. Aquí conocerá nuestras prácticas de convivencia, equidad y desarrollo humano.",
-    topics: [
-      "Política de Derechos · Comité de Género",
-      "Comité de Bienestar y empoderamiento de la mujer",
-      "Canales de comunicación · Mecanismo de RPQRD",
-      "Beneficios pacto colectivo / Fondo de empleados",
-    ],
-    objective:
-      "Apropiar las prácticas de cuidado humano y comunitario que vivimos a diario.",
-  },
-  {
-    slug: "seguridad-y-salud",
-    num: "03",
-    title: "Seguridad y salud en el trabajo",
-    duration: "30 min",
-    chip: "Cuidado",
-    Anim: AnimSeguridad,
-    bg: "/vlcsnap-2026-04-27-07h37m20s775.png",
-    span: 4,
-    blurb:
-      "Cero accidentes no es una meta, es un acuerdo. Conozca los protocolos que protegen su vida y la de su equipo.",
-    topics: [
-      "Sistema de Gestión de SST (SGSST): objetivo y alcance",
-      "Política Integral de Seguridad y Salud en el Trabajo",
-      "Prevención del consumo de alcohol, sustancias psicoactivas y medicamentos no formulados",
-      "Plan Estratégico de Seguridad Vial",
-      "Obligaciones de la ARL y de los empleadores",
-      "Responsabilidades de los trabajadores",
-      "Identificación de peligros, medidas de prevención y de control",
-      "Definiciones: peligro, riesgo, incidente, accidente de trabajo, enfermedad laboral, actos y condiciones inseguras, procedimiento para el reporte",
-      "Investigación de incidentes, accidentes de trabajo y enfermedades laborales",
-      "COPASST, Comité de Convivencia Laboral, Comité de Seguridad Vial y Comité de Emergencias",
-      "Plan de prevención, preparación y respuesta ante emergencias",
-      "Elementos de Protección Individual (EPI)",
-      "Enfermería (seguimiento a condiciones especiales)",
-      "Sala amiga de la familia lactante",
-    ],
-    topicGroups: [
-      {
-        title: "Marco del SGSST",
-        items: [
-          "Sistema de Gestión de SST (SGSST): objetivo y alcance",
-          "Política Integral de Seguridad y Salud en el Trabajo",
-          "Obligaciones de la ARL y de los empleadores",
-          "Responsabilidades de los trabajadores",
-        ],
-      },
-      {
-        title: "Prevención y control de riesgos",
-        items: [
-          "Identificación de peligros, medidas de prevención y de control",
-          "Definiciones: peligro, riesgo, incidente, accidente de trabajo, enfermedad laboral, actos y condiciones inseguras, procedimiento para el reporte",
-          "Prevención del consumo de alcohol, sustancias psicoactivas y medicamentos no formulados",
-          "Plan Estratégico de Seguridad Vial",
-        ],
-      },
-      {
-        title: "Comités, emergencias e investigación",
-        items: [
-          "COPASST, Comité de Convivencia Laboral, Comité de Seguridad Vial y Comité de Emergencias",
-          "Plan de prevención, preparación y respuesta ante emergencias",
-          "Investigación de incidentes, accidentes de trabajo y enfermedades laborales",
-        ],
-      },
-      {
-        title: "Cuidado y bienestar en operación",
-        items: [
-          "Elementos de Protección Individual (EPI)",
-          "Enfermería (seguimiento a condiciones especiales)",
-          "Sala amiga de la familia lactante",
-        ],
-      },
-    ],
-    objective:
-      "Reconocer riesgos, aplicar controles y responder ante emergencias en la operación.",
-  },
-  {
-    slug: "gestion-ambiental",
-    num: "04",
-    title: "Gestión ambiental",
-    duration: "20 min",
-    chip: "Ecosistema",
-    Anim: AnimAmbiental,
-    bg: "/DSC_2854.jpg",
-    bgPosition: "55% center",
-    span: 4,
-    blurb:
-      "Regenerar el llano es nuestra forma de producir. Aprenda cómo cuidamos suelo, agua, fauna y flora todos los días.",
-    topics: [
-      "Política y objetivo de gestión ambiental (No tala, No pesca, No quema, No caza)",
-      "Identificación de impactos ambientales y Plan de Manejo Ambiental (PGIRS, PUEAA, PUEAE, PGRMV)",
-      "AVC (Altos Valores de Conservación)",
-      "Especies RAP (raras, amenazadas o en peligro de extinción)",
-      "Manejo adecuado de residuos",
-      "Obligaciones y responsabilidades en gestión ambiental",
-    ],
-    objective:
-      "Operar bajo prácticas que regeneran el ecosistema en cada hectárea de Guaicaramo.",
-  },
-  {
-    slug: "sistemas-integrados-de-gestion",
-    num: "05",
-    title: "Sistemas Integrados de Gestión",
-    duration: "20 min",
-    chip: "Excelencia",
-    Anim: AnimSistemas,
-    bg: "/tractomulas.jpg.jpeg",
-    span: 4,
-    blurb:
-      "Lo que se mide, se mejora. Conozca las certificaciones y procesos que nos hacen únicos ante el mundo.",
-    topics: [
-      "Política Integral de Calidad · Objetivos de calidad · Responsabilidades",
-      "Esquemas de certificación (RSPO, ISCC y APSColombia)",
-    ],
-    objective:
-      "Sostener los estándares y certificaciones que acreditan nuestra excelencia.",
-  },
-];
+const MODULES_WITH_ANIM: Module[] = MODULE_DATA.map((m) => {
+  const animMap: Record<string, ComponentType> = {
+    introduccion: AnimIntro,
+    "bienestar-social": AnimBienestar,
+    "seguridad-y-salud": AnimSeguridad,
+    "gestion-ambiental": AnimAmbiental,
+    "sistemas-integrados-de-gestion": AnimSistemas,
+  };
+  return { ...m, Anim: animMap[m.slug] ?? AnimIntro };
+});
 
 function ModuleCard({ m }: { m: Module }) {
   const { Anim } = m;
@@ -537,7 +383,38 @@ function ModuleCard({ m }: { m: Module }) {
   );
 }
 
-export function ModulesSection() {
+interface ModulesSectionProps {
+  authenticated?: boolean;
+  onRequestAuth?: () => void;
+}
+
+export function ModulesSection({
+  authenticated = false,
+  onRequestAuth,
+}: ModulesSectionProps) {
+  const [inView, setInView] = useState(false);
+  const gridRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = gridRef.current;
+    if (!el) return;
+    if (typeof IntersectionObserver === "undefined") {
+      setInView(true);
+      return;
+    }
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          setInView(true);
+          io.disconnect();
+        }
+      },
+      { threshold: 0.15 },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
   return (
     <section className="section dark" id="modulos">
       <div className="wrap">
@@ -557,10 +434,69 @@ export function ModulesSection() {
           </div>
         </div>
 
-        <div className="modules-grid">
-          {MODULES.map((m) => (
-            <ModuleCard key={m.num} m={m} />
-          ))}
+        <div className="modules-grid-wrapper">
+          <div
+            ref={gridRef}
+            className={`modules-grid${authenticated ? "" : " modules-grid--locked"}${inView ? " in" : ""}`}
+            aria-hidden={authenticated ? undefined : true}
+          >
+            {MODULES_WITH_ANIM.map((m) => (
+              <ModuleCard key={m.num} m={m} />
+            ))}
+          </div>
+
+          {!authenticated && (
+            <div className="modules-lock-overlay" aria-live="polite">
+              <div className="modules-lock-box">
+                <div className="modules-lock-icon" aria-hidden="true">
+                  <svg
+                    viewBox="0 0 48 48"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="56"
+                    height="56"
+                  >
+                    <rect
+                      x="8"
+                      y="22"
+                      width="32"
+                      height="22"
+                      rx="4"
+                      stroke="currentColor"
+                      strokeWidth="2.4"
+                    />
+                    <path
+                      d="M16 22v-6a8 8 0 0 1 16 0v6"
+                      stroke="currentColor"
+                      strokeWidth="2.4"
+                      strokeLinecap="round"
+                    />
+                    <circle cx="24" cy="33" r="3" fill="currentColor" />
+                    <line
+                      x1="24"
+                      y1="36"
+                      x2="24"
+                      y2="40"
+                      stroke="currentColor"
+                      strokeWidth="2.4"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                </div>
+                <p className="modules-lock-text">
+                  Identifícate para acceder a los módulos de inducción.
+                </p>
+                <button
+                  className="modules-lock-btn"
+                  onClick={onRequestAuth}
+                  type="button"
+                >
+                  Autenticarse
+                  <span className="arr" />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </section>

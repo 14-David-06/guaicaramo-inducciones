@@ -1,0 +1,70 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { Header } from "./Header";
+import { Hero } from "./Hero";
+import { InduccionSection } from "./InduccionSection";
+import { ModulesSection } from "./ModulesSection";
+import { Footer } from "./Footer";
+import { LoginModal } from "./LoginModal";
+
+const SESSION_KEY = "gai_auth_session";
+const SESSION_TTL = 24 * 60 * 60 * 1000; // 24 h
+
+function readSession(): boolean {
+  try {
+    const raw = localStorage.getItem(SESSION_KEY);
+    if (!raw) return false;
+    const { expiry } = JSON.parse(raw) as { expiry: number };
+    return Date.now() < expiry;
+  } catch {
+    return false;
+  }
+}
+
+function writeSession() {
+  try {
+    localStorage.setItem(
+      SESSION_KEY,
+      JSON.stringify({ expiry: Date.now() + SESSION_TTL })
+    );
+  } catch { /* storage unavailable */ }
+}
+
+export function LandingClient() {
+  const [loginOpen, setLoginOpen] = useState(false);
+  // Start false to match SSR; populate from localStorage after hydration
+  const [authenticated, setAuthenticated] = useState(false);
+
+  useEffect(() => {
+    if (readSession()) setAuthenticated(true);
+  }, []);
+
+  function openLogin() {
+    if (authenticated) return;
+    setLoginOpen(true);
+  }
+
+  function handleAuthSuccess(_nombre: string) {
+    writeSession();
+    setAuthenticated(true);
+  }
+
+  return (
+    <>
+      <Header onModulosClick={openLogin} />
+      <Hero />
+      <InduccionSection />
+      <ModulesSection
+        authenticated={authenticated}
+        onRequestAuth={openLogin}
+      />
+      <Footer />
+      <LoginModal
+        open={loginOpen}
+        onClose={() => setLoginOpen(false)}
+        onSuccess={handleAuthSuccess}
+      />
+    </>
+  );
+}

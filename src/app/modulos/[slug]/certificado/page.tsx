@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 
-import { MODULES } from "@/components/landing/ModulesSection";
+import { MODULES } from "@/lib/modules-data";
 import { Certificate } from "@/components/modulo/Certificate";
 
 type Params = { slug: string };

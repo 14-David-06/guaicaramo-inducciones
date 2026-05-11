@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 
 import { Header } from "@/components/landing/Header";
 import { Footer } from "@/components/landing/Footer";
-import { MODULES } from "@/components/landing/ModulesSection";
+import { MODULES } from "@/lib/modules-data";
 import { SignatureForm } from "@/components/modulo/SignatureForm";
 
 type Params = { slug: string };

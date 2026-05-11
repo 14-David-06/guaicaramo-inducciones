@@ -13,14 +13,12 @@ export function RevealOnScroll() {
     if (typeof IntersectionObserver === "undefined") {
       // Fallback: just reveal everything immediately.
       document
-        .querySelectorAll<HTMLElement>(".reveal, .modules-grid")
+      .querySelectorAll<HTMLElement>(".reveal")
         .forEach((el) => el.classList.add("in"));
       return;
     }
 
-    const els = document.querySelectorAll<HTMLElement>(
-      ".reveal, .modules-grid",
-    );
+    const els = document.querySelectorAll<HTMLElement>(".reveal");
     const io = new IntersectionObserver(
       (entries) => {
         entries.forEach((e) => {
