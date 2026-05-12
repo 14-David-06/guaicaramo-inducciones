@@ -41,7 +41,7 @@ export function LandingClient() {
   useEffect(() => {
     if (readSession()) {
       setAuthenticated(true);
-    } else if (searchParams.get("auth") === "required") {
+    } else if (searchParams.get("login") === "1" || searchParams.get("auth") === "required") {
       setLoginOpen(true);
     }
   }, [searchParams]);
@@ -54,7 +54,7 @@ export function LandingClient() {
   function handleAuthSuccess(_nombre: string, cedula: string) {
     writeSession(cedula);
     setAuthenticated(true);
-    const returnTo = searchParams.get("return");
+    const returnTo = searchParams.get("next") ?? searchParams.get("return");
     if (returnTo?.startsWith("/modulos/")) {
       router.push(returnTo);
     }
