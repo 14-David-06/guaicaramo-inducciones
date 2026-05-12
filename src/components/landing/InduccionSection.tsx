@@ -126,7 +126,7 @@ export function InduccionSection() {
                 <li
                   key={p.word}
                   className="pillar"
-                  style={{ ["--i" as string]: i } as React.CSSProperties}
+                  style={{ ["--i" as string]: String(i) } as React.CSSProperties}
                 >
                   <div className="pillar-icon-wrap">
                     <Icon />

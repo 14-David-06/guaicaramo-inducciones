@@ -1,5 +1,10 @@
 import { NextResponse } from "next/server";
 import { findEmpleado, normalizeCedula } from "@/lib/airtable";
+import {
+  createSessionCookieValue,
+  sessionCookieOptions,
+  COOKIE_NAME,
+} from "@/lib/session-cookie";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -90,10 +95,13 @@ export async function POST(req: Request) {
         { status: 200 }
       );
     }
-    return NextResponse.json(
+    const cookieValue = await createSessionCookieValue();
+    const res = NextResponse.json(
       { ok: true, nombre: emp.nombre },
       { status: 200 }
     );
+    res.cookies.set(COOKIE_NAME, cookieValue, sessionCookieOptions());
+    return res;
   } catch {
     return NextResponse.json(
       { error: "Error al verificar las credenciales. Intente de nuevo.", code: "server_error" },

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Header } from "./Header";
 import { Hero } from "./Hero";
 import { InduccionSection } from "./InduccionSection";
@@ -33,12 +34,17 @@ function writeSession() {
 
 export function LandingClient() {
   const [loginOpen, setLoginOpen] = useState(false);
-  // Start false to match SSR; populate from localStorage after hydration
   const [authenticated, setAuthenticated] = useState(false);
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
   useEffect(() => {
-    if (readSession()) setAuthenticated(true);
-  }, []);
+    if (readSession()) {
+      setAuthenticated(true);
+    } else if (searchParams.get("auth") === "required") {
+      setLoginOpen(true);
+    }
+  }, [searchParams]);
 
   function openLogin() {
     if (authenticated) return;
@@ -48,6 +54,10 @@ export function LandingClient() {
   function handleAuthSuccess(_nombre: string) {
     writeSession();
     setAuthenticated(true);
+    const returnTo = searchParams.get("return");
+    if (returnTo?.startsWith("/modulos/")) {
+      router.push(returnTo);
+    }
   }
 
   return (

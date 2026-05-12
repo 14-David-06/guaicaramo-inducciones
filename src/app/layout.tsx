@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Script from "next/script";
 import { Fraunces, Instrument_Sans } from "next/font/google";
 import "./globals.css";
 
@@ -38,14 +37,8 @@ export default function RootLayout({
       lang="es"
       className={`${fraunces.variable} ${instrumentSans.variable}`}
     >
-      <body>
+      <body suppressHydrationWarning>
         {children}
-        <Script
-          src="https://cdn.jsdelivr.net/npm/sienna-accessibility@latest/dist/sienna-accessibility.umd.js"
-          strategy="afterInteractive"
-          data-position="bottom-right"
-          data-offset="24,24"
-        />
       </body>
     </html>
   );

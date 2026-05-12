@@ -30,6 +30,7 @@ export function Header({
           width={268}
           height={118}
           priority
+          loading="eager"
           className="hero-logo-img"
         />
       </Link>
