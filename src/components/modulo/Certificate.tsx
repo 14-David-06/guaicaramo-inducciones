@@ -143,7 +143,7 @@ export function Certificate({ slug }: { slug: string }) {
       <div className="cert-empty">
         <p>Aún no ha firmado este módulo.</p>
         <Link href={`/modulos/${slug}/firmar`} className="btn btn-primary">
-          Validar cédula y firmar
+          Firmar y generar certificado
         </Link>
       </div>
     );

@@ -30,6 +30,20 @@ function formatCedula(digits: string) {
   return digits.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 }
 
+const SESSION_KEY = "gai_auth_session";
+
+function readSessionCedula(): string | null {
+  try {
+    const raw = localStorage.getItem(SESSION_KEY);
+    if (!raw) return null;
+    const { expiry, cedula } = JSON.parse(raw) as { expiry: number; cedula?: string };
+    if (Date.now() >= expiry) return null;
+    return cedula ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export function SignatureForm({
   slug,
   moduleNum,
@@ -75,6 +89,13 @@ export function SignatureForm({
         };
         setCert(parsed);
         setStep("done");
+        return;
+      }
+      // Skip verify step: use cédula from active session
+      const sessionCedula = readSessionCedula();
+      if (sessionCedula) {
+        setVerifiedCedula(sessionCedula);
+        setStep("sign");
       }
     } catch {
       /* ignore */
@@ -316,10 +337,6 @@ export function SignatureForm({
             <dd>{formatCedula(cert.cedula)}</dd>
           </div>
           <div>
-            <dt>Código</dt>
-            <dd className="sign-cert-code">{cert.code}</dd>
-          </div>
-          <div>
             <dt>Emitido</dt>
             <dd>
               {new Date(cert.issuedAt).toLocaleString("es-CO", {
@@ -331,37 +348,9 @@ export function SignatureForm({
         </dl>
 
         <div className="sign-actions">
-          <Link
-            href={`/modulos/${slug}/certificado`}
-            className="btn btn-primary"
-          >
-            Ver mi certificado
-          </Link>
           <Link href={nextHref} className="btn btn-ghost">
             {nextLabel} <span className="btn-arrow" aria-hidden="true" />
           </Link>
-          <button
-            type="button"
-            className="btn btn-ghost"
-            onClick={() => {
-              try {
-                localStorage.removeItem(STORAGE_CERT(slug));
-              } catch {
-                /* ignore */
-              }
-              setCert(null);
-              setCedula("");
-              setVerifiedCedula(null);
-              setAccept(false);
-              setAcceptPolicy(false);
-              setError(null);
-              setNotFound(false);
-              hasStrokeRef.current = false;
-              setStep("verify");
-            }}
-          >
-            Volver a firmar
-          </button>
           <Link href="/#modulos" className="btn btn-ghost">
             Volver a los módulos
           </Link>
@@ -375,13 +364,12 @@ export function SignatureForm({
     return (
       <form className="sign-card" onSubmit={onSign} noValidate>
         <div className="eyebrow" style={{ marginBottom: 8 }}>
-          Paso 2 · Firma
+          Firma
         </div>
         <h2 className="sign-title">Firme para emitir su certificado</h2>
         <p className="sign-sub">
-          Cédula validada:{" "}
-          <strong>{formatCedula(verifiedCedula ?? "")}</strong>
-          {". "}
+          Cédula: <strong>{formatCedula(verifiedCedula ?? "")}</strong>
+          {". "}
           Firme en el recuadro para registrar el módulo {moduleNum} ·{" "}
           {moduleTitle}.
         </p>
@@ -462,19 +450,6 @@ export function SignatureForm({
           >
             Emitir certificado{" "}
             <span className="btn-arrow" aria-hidden="true" />
-          </button>
-          <button
-            type="button"
-            className="btn btn-ghost"
-            onClick={() => {
-              setStep("verify");
-              setVerifiedCedula(null);
-              setAccept(false);
-              setAcceptPolicy(false);
-              hasStrokeRef.current = false;
-            }}
-          >
-            Cambiar cédula
           </button>
         </div>
       </form>

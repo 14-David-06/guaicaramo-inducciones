@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 interface LoginModalProps {
   open: boolean;
   onClose: () => void;
-  onSuccess: (nombre: string) => void;
+  onSuccess: (nombre: string, cedula: string) => void;
 }
 
 /* Rendered only while open — unmounts completely on close, backdrop gone */
@@ -13,6 +13,7 @@ function LoginModalContent({
   onClose,
   onSuccess,
 }: Omit<LoginModalProps, "open">) {
+  // cedula is already in scope from the form state below
   const [cedula, setCedula] = useState("");
   const [pin, setPin] = useState("");
   const [error, setError] = useState("");
@@ -82,7 +83,7 @@ function LoginModalContent({
 
       /* success — close dialog first, then unlock modules */
       onClose();
-      onSuccess(data.nombre ?? "");
+      onSuccess(data.nombre ?? "", cedula.replace(/\D/g, ""));
     } catch {
       setError("Error de conexión. Intente de nuevo.");
     } finally {

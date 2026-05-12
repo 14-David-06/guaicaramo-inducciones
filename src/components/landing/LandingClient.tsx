@@ -23,11 +23,11 @@ function readSession(): boolean {
   }
 }
 
-function writeSession() {
+function writeSession(cedula: string) {
   try {
     localStorage.setItem(
       SESSION_KEY,
-      JSON.stringify({ expiry: Date.now() + SESSION_TTL })
+      JSON.stringify({ expiry: Date.now() + SESSION_TTL, cedula })
     );
   } catch { /* storage unavailable */ }
 }
@@ -51,8 +51,8 @@ export function LandingClient() {
     setLoginOpen(true);
   }
 
-  function handleAuthSuccess(_nombre: string) {
-    writeSession();
+  function handleAuthSuccess(_nombre: string, cedula: string) {
+    writeSession(cedula);
     setAuthenticated(true);
     const returnTo = searchParams.get("return");
     if (returnTo?.startsWith("/modulos/")) {

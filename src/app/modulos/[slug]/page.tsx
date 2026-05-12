@@ -40,7 +40,7 @@ export default async function ModulePage({
   if (idx === -1) notFound();
   const m = MODULES[idx];
   const nextHref = `/modulos/${m.slug}/firmar`;
-  const nextLabel = "Validar cédula y firmar";
+  const nextLabel = "Firmar y generar certificado";
 
   return (
     <>
@@ -76,7 +76,7 @@ export default async function ModulePage({
               </li>
               <li>
                 <span className="mp-crumb-next">
-                  Validar cédula y firmar
+                  Firmar y generar certificado
                 </span>
               </li>
             </ol>

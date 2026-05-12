@@ -5,6 +5,9 @@ import {
   normalizeCedula,
 } from "@/lib/airtable";
 import { encryptString, sha256Hex } from "@/lib/crypto";
+import { generateCertPdfBuffer } from "@/lib/cert-puppeteer";
+import { sendCertNotification } from "@/lib/mailer";
+import { MODULES } from "@/lib/modules-data";
 
 const MAX_FIRMA_BYTES = 200_000; // ~200 KB raw base64 PNG
 const FIRMA_DATA_URL_RE = /^data:image\/png;base64,[A-Za-z0-9+/=]+$/;
@@ -99,15 +102,44 @@ export async function POST(req: Request) {
       hashCertificado,
     });
 
-    return NextResponse.json(
-      {
-        codigo: result.codigo,
-        emitidoEn: result.emitidoEn,
+    const responsePayload = {
+      codigo: result.codigo,
+      emitidoEn: result.emitidoEn,
+      nombre: empleado.nombre,
+      firmaPng: firma,
+    };
+
+    // Send email notification with certificate PDF attachment (non-blocking — errors are logged only)
+    const mod = MODULES.find((m) => m.slug === moduloSlug);
+    if (mod) {
+      generateCertPdfBuffer({
         nombre: empleado.nombre,
+        cedula,
+        moduloNum,
+        moduloTitle: mod.title,
+        moduloSlug,
+        topics: mod.topics,
+        codigo: result.codigo,
+        issuedAt: result.emitidoEn,
         firmaPng: firma,
-      },
-      { status: 200 }
-    );
+      })
+        .then((certPdfBuffer) =>
+          sendCertNotification({
+            nombre: empleado.nombre,
+            cedula,
+            moduloNum,
+            moduloTitle: mod.title,
+            codigo: result.codigo,
+            issuedAt: result.emitidoEn,
+            certPdfBuffer,
+          })
+        )
+        .catch((mailErr) => {
+          console.error("[/api/certificado] email notification failed:", mailErr);
+        });
+    }
+
+    return NextResponse.json(responsePayload, { status: 200 });
   } catch (err) {
     console.error("[/api/certificado] error:", err);
     return NextResponse.json(

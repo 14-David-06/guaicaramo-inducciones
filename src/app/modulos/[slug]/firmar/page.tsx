@@ -76,7 +76,7 @@ export default async function SignPage({
               </li>
               <li>
                 <span className="mp-crumb-current">
-                  Validar cédula y firmar
+                  Firmar y generar certificado
                 </span>
               </li>
             </ol>
