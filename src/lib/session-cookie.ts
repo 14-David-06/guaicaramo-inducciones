@@ -9,8 +9,7 @@ export const COOKIE_NAME: string = _cookieName;
 const TTL_S = 24 * 60 * 60; // 24 h
 
 function getSecret(): string {
-  const s =
-    process.env.SESSION_SECRET ?? process.env.SIGNATURE_ENCRYPTION_KEY ?? "";
+  const s = process.env.SESSION_SECRET ?? "";
   if (!s) throw new Error("Missing SESSION_SECRET env variable");
   return s;
 }

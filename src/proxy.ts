@@ -6,7 +6,7 @@ export const config = {
   matcher: ["/modulos/:path*"],
 };
 
-export async function middleware(req: NextRequest): Promise<NextResponse> {
+export async function proxy(req: NextRequest): Promise<NextResponse> {
   const cookieValue = req.cookies.get(COOKIE_NAME)?.value;
 
   if (cookieValue && (await verifySessionCookieValue(cookieValue))) {
