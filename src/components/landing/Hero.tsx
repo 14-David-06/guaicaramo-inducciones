@@ -71,7 +71,7 @@ export function Hero() {
       <div className="wrap hero-content">
         <h1 className="hero-title hero-title-fade" ref={titleRef}>
           <span className="line line-1">
-            Guaicaramo, <em>comunidad</em>
+            Naturaleza, <em>comunidad</em>
           </span>
           <span className="line line-2">y excelencia</span>
           <span className="line line-3">en armonía.</span>
