@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { Header } from "./Header";
 import { Hero } from "./Hero";
 import { InduccionSection } from "./InduccionSection";
@@ -35,7 +35,6 @@ function writeSession(cedula: string) {
 export function LandingClient() {
   const [loginOpen, setLoginOpen] = useState(false);
   const [authenticated, setAuthenticated] = useState(false);
-  const router = useRouter();
   const searchParams = useSearchParams();
 
   useEffect(() => {
@@ -56,7 +55,9 @@ export function LandingClient() {
     setAuthenticated(true);
     const returnTo = searchParams.get("next") ?? searchParams.get("return");
     if (returnTo?.startsWith("/modulos/")) {
-      router.push(returnTo);
+      // Hard navigation to bypass the Next.js router cache, which in production
+      // holds a prefetch redirect for /modulos/* (proxy blocked it pre-login).
+      window.location.href = returnTo;
     }
   }
 

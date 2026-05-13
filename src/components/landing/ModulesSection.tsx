@@ -349,6 +349,7 @@ function ModuleCard({ m }: { m: Module }) {
   return (
     <Link
       href={`/modulos/${m.slug}`}
+      prefetch={false}
       className={`mcard span-${m.span}`}
       aria-label={`Iniciar módulo ${m.num} · ${m.title}`}
     >
