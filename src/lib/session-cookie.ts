@@ -3,13 +3,21 @@
  * Used by both middleware (Edge) and the login API route (Node.js).
  */
 
-const _cookieName = process.env.COOKIE_NAME;
+// Strip any surrounding quotes/whitespace that could appear when the value is
+// copied verbatim from the .env.local format
+const _cookieName = (process.env.COOKIE_NAME ?? "")
+  .trim()
+  .replace(/^["']|["']$/g, "");
 if (!_cookieName) throw new Error("Missing COOKIE_NAME env variable");
 export const COOKIE_NAME: string = _cookieName;
 const TTL_S = 24 * 60 * 60; // 24 h
 
 function getSecret(): string {
-  const s = process.env.SESSION_SECRET ?? "";
+  // Accept either SESSION_SECRET (preferred) or the older SIGNATURE_ENCRYPTION_KEY
+  // so deployments that only have the latter still work.
+  const s = (
+    process.env.SESSION_SECRET ?? process.env.SIGNATURE_ENCRYPTION_KEY ?? ""
+  ).trim();
   if (!s) throw new Error("Missing SESSION_SECRET env variable");
   return s;
 }
