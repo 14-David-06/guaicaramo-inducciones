@@ -12,6 +12,23 @@ const getPersonalTableId = () => getEnv("AIRTABLE_TABLE_PERSONAL_ID");
 const getCertificadosTableId = () =>
   getEnv("AIRTABLE_TABLE_CERTIFICADOS_ID");
 
+// Field IDs — referencing fields by ID avoids issues with invisible
+// characters (BOM/zero-width) in field names like "﻿Empleado" / "﻿Codigo".
+const F = {
+  personal: {
+    empleado: () => getEnv("AIRTABLE_FIELD_PERSONAL_EMPLEADO_ID"),
+    nombre: () => getEnv("AIRTABLE_FIELD_PERSONAL_NOMBRE_ID"),
+  },
+  cert: {
+    codigo: () => getEnv("AIRTABLE_FIELD_CERT_CODIGO_ID"),
+    hash: () => getEnv("AIRTABLE_FIELD_CERT_HASH_ID"),
+    firma: () => getEnv("AIRTABLE_FIELD_CERT_FIRMA_ID"),
+    personal: () => getEnv("AIRTABLE_FIELD_CERT_PERSONAL2_ID"),
+    moduloVersion: () => getEnv("AIRTABLE_FIELD_CERT_MODULO_VERSION_ID"),
+    emitidoEn: () => getEnv("AIRTABLE_FIELD_CERT_EMITIDO_EN_ID"),
+  },
+} as const;
+
 function airtableUrl(tableId: string, qs = "") {
   return `https://api.airtable.com/v0/${getBaseId()}/${tableId}${qs}`;
 }
@@ -36,32 +53,34 @@ export async function findEmpleado(
   const digits = normalizeCedula(cedula);
   if (digits.length < 6 || digits.length > 12) return null;
 
-  const formula = encodeURIComponent(`{Empleado}=${digits}`);
+  const empleadoFid = F.personal.empleado();
+  const nombreFid = F.personal.nombre();
+
+  const formula = encodeURIComponent(`{${empleadoFid}}=${digits}`);
   const url = airtableUrl(
     getPersonalTableId(),
     `?filterByFormula=${formula}&maxRecords=1` +
-      `&fields%5B%5D=Empleado&fields%5B%5D=${encodeURIComponent(
-        "Nombre del empleado"
-      )}`
+      `&returnFieldsByFieldId=true` +
+      `&fields%5B%5D=${empleadoFid}&fields%5B%5D=${nombreFid}`
   );
 
   const res = await fetch(url, {
     headers: authHeaders(),
     cache: "no-store",
   });
-  if (!res.ok) throw new Error(`Airtable lookup failed (${res.status})`);
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`Airtable lookup failed (${res.status}): ${text}`);
+  }
 
   const data = (await res.json()) as {
-    records?: {
-      id: string;
-      fields: { "Nombre del empleado"?: string };
-    }[];
+    records?: { id: string; fields: Record<string, unknown> }[];
   };
   const r = data.records?.[0];
   if (!r) return null;
   return {
     recordId: r.id,
-    nombre: (r.fields["Nombre del empleado"] ?? "").trim(),
+    nombre: String(r.fields[nombreFid] ?? "").trim(),
   };
 }
 
@@ -91,12 +110,12 @@ export async function crearCertificado(
 ): Promise<{ id: string; codigo: string; emitidoEn: string }> {
   const url = airtableUrl(getCertificadosTableId());
   const fields: Record<string, unknown> = {
-    Codigo: cert.codigo,
-    ModuloVersion: cert.moduloVersion,
-    Personal: [cert.personalRecordId],
+    [F.cert.codigo()]: cert.codigo,
+    [F.cert.moduloVersion()]: cert.moduloVersion,
+    [F.cert.personal()]: [cert.personalRecordId],
   };
-  if (cert.firmaCifrada) fields["Firma Colaborador"] = cert.firmaCifrada;
-  if (cert.hashCertificado) fields.HashCertificado = cert.hashCertificado;
+  if (cert.firmaCifrada) fields[F.cert.firma()] = cert.firmaCifrada;
+  if (cert.hashCertificado) fields[F.cert.hash()] = cert.hashCertificado;
 
   const res = await fetch(url, {
     method: "POST",
@@ -116,13 +135,17 @@ export async function crearCertificado(
   const data = (await res.json()) as {
     id: string;
     createdTime?: string;
-    fields: { Codigo?: string; EmitidoEn?: string };
+    fields: Record<string, unknown>;
   };
+  const codigoFid = F.cert.codigo();
+  const emitidoFid = F.cert.emitidoEn();
   return {
     id: data.id,
-    codigo: data.fields.Codigo ?? cert.codigo,
+    codigo: String(data.fields[codigoFid] ?? cert.codigo),
     emitidoEn:
-      data.fields.EmitidoEn ?? data.createdTime ?? new Date().toISOString(),
+      (data.fields[emitidoFid] as string | undefined) ??
+      data.createdTime ??
+      new Date().toISOString(),
   };
 }
 
@@ -134,26 +157,32 @@ export async function findCertificadoFirma(
   codigo: string
 ): Promise<{ firmaCifrada: string; hashCertificado?: string } | null> {
   if (!/^[A-Z0-9-]{6,40}$/i.test(codigo)) return null;
-  const formula = encodeURIComponent(`{Codigo}="${codigo}"`);
+  const codigoFid = F.cert.codigo();
+  const firmaFid = F.cert.firma();
+  const hashFid = F.cert.hash();
+  const formula = encodeURIComponent(`{${codigoFid}}="${codigo}"`);
   const url = airtableUrl(
     getCertificadosTableId(),
     `?filterByFormula=${formula}&maxRecords=1` +
-      `&fields%5B%5D=${encodeURIComponent("Firma Colaborador")}&fields%5B%5D=HashCertificado`
+      `&returnFieldsByFieldId=true` +
+      `&fields%5B%5D=${firmaFid}&fields%5B%5D=${hashFid}`
   );
   const res = await fetch(url, {
     headers: authHeaders(),
     cache: "no-store",
   });
-  if (!res.ok) throw new Error(`Airtable lookup failed (${res.status})`);
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`Airtable lookup failed (${res.status}): ${text}`);
+  }
   const data = (await res.json()) as {
-    records?: {
-      fields: { "Firma Colaborador"?: string; HashCertificado?: string };
-    }[];
+    records?: { fields: Record<string, unknown> }[];
   };
   const r = data.records?.[0];
-  if (!r || !r.fields["Firma Colaborador"]) return null;
+  const firma = r?.fields[firmaFid] as string | undefined;
+  if (!r || !firma) return null;
   return {
-    firmaCifrada: r.fields["Firma Colaborador"],
-    hashCertificado: r.fields.HashCertificado,
+    firmaCifrada: firma,
+    hashCertificado: r.fields[hashFid] as string | undefined,
   };
 }
