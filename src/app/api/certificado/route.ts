@@ -14,6 +14,7 @@ const FIRMA_DATA_URL_RE = /^data:image\/png;base64,[A-Za-z0-9+/=]+$/;
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 60; // seconds — PDF generation + email can take ~20-40 s
 
 const RATE_WINDOW_MS = 60_000;
 const RATE_MAX = 10;
@@ -109,34 +110,36 @@ export async function POST(req: Request) {
       firmaPng: firma,
     };
 
-    // Send email notification with certificate PDF attachment (non-blocking — errors are logged only)
+    // Send email notification with certificate PDF attachment.
+    // Must be awaited before returning — Vercel terminates the process
+    // immediately after the response is sent (no background work allowed).
     const mod = MODULES.find((m) => m.slug === moduloSlug);
     if (mod) {
-      generateCertPdfBuffer({
-        nombre: empleado.nombre,
-        cedula,
-        moduloNum,
-        moduloTitle: mod.title,
-        moduloSlug,
-        topics: mod.topics,
-        codigo: result.codigo,
-        issuedAt: result.emitidoEn,
-        firmaPng: firma,
-      })
-        .then((certPdfBuffer) =>
-          sendCertNotification({
-            nombre: empleado.nombre,
-            cedula,
-            moduloNum,
-            moduloTitle: mod.title,
-            codigo: result.codigo,
-            issuedAt: result.emitidoEn,
-            certPdfBuffer,
-          })
-        )
-        .catch((mailErr) => {
-          console.error("[/api/certificado] email notification failed:", mailErr);
+      try {
+        const certPdfBuffer = await generateCertPdfBuffer({
+          nombre: empleado.nombre,
+          cedula,
+          moduloNum,
+          moduloTitle: mod.title,
+          moduloSlug,
+          topics: mod.topics,
+          codigo: result.codigo,
+          issuedAt: result.emitidoEn,
+          firmaPng: firma,
         });
+        await sendCertNotification({
+          nombre: empleado.nombre,
+          cedula,
+          moduloNum,
+          moduloTitle: mod.title,
+          codigo: result.codigo,
+          issuedAt: result.emitidoEn,
+          certPdfBuffer,
+        });
+      } catch (mailErr) {
+        console.error("[/api/certificado] email notification failed:", mailErr);
+        // Email failure does not block the certificate response
+      }
     }
 
     return NextResponse.json(responsePayload, { status: 200 });
