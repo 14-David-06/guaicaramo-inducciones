@@ -159,7 +159,7 @@ export function ModulePlayer({
 
       <div className="mp-hint">
         El botón <em>{nextLabel}</em> se habilita cuando termine el video.{" "}
-        {/* {!completed && (
+        {!completed && (
           <button
             type="button"
             className="mp-skip-btn"
@@ -167,7 +167,7 @@ export function ModulePlayer({
           >
             Saltar video
           </button>
-        )} */}
+        )}
       </div>
     </div>
   );
