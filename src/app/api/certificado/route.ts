@@ -115,8 +115,9 @@ export async function POST(req: Request) {
     // immediately after the response is sent (no background work allowed).
     const mod = MODULES.find((m) => m.slug === moduloSlug);
     if (mod) {
+      let certPdfBuffer: Buffer | undefined;
       try {
-        const certPdfBuffer = await generateCertPdfBuffer({
+        certPdfBuffer = await generateCertPdfBuffer({
           nombre: empleado.nombre,
           cedula,
           moduloNum,
@@ -127,18 +128,24 @@ export async function POST(req: Request) {
           issuedAt: result.emitidoEn,
           firmaPng: firma,
         });
-        await sendCertNotification({
-          nombre: empleado.nombre,
-          cedula,
-          moduloNum,
-          moduloTitle: mod.title,
-          codigo: result.codigo,
-          issuedAt: result.emitidoEn,
-          certPdfBuffer,
-        });
-      } catch (mailErr) {
-        console.error("[/api/certificado] email notification failed:", mailErr);
-        // Email failure does not block the certificate response
+      } catch (pdfErr) {
+        console.error("[/api/certificado] PDF generation failed:", pdfErr);
+      }
+
+      if (certPdfBuffer) {
+        try {
+          await sendCertNotification({
+            nombre: empleado.nombre,
+            cedula,
+            moduloNum,
+            moduloTitle: mod.title,
+            codigo: result.codigo,
+            issuedAt: result.emitidoEn,
+            certPdfBuffer,
+          });
+        } catch (mailErr) {
+          console.error("[/api/certificado] email notification failed:", mailErr);
+        }
       }
     }
 
