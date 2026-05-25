@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   useEffect,
   useRef,
@@ -51,6 +52,7 @@ export function SignatureForm({
   nextHref,
   nextLabel,
 }: Props) {
+  const router = useRouter();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const drawingRef = useRef(false);
   const lastPointRef = useRef<{ x: number; y: number } | null>(null);
@@ -77,8 +79,16 @@ export function SignatureForm({
   // Mount: read existing state
   useEffect(() => {
     try {
-      setModuleDone(localStorage.getItem(STORAGE_DONE(slug)) === "1");
+      const done = localStorage.getItem(STORAGE_DONE(slug)) === "1";
+      setModuleDone(done);
+
+      // Guard: redirect back to module page if video not completed
       const raw = localStorage.getItem(STORAGE_CERT(slug));
+      if (!done && !raw) {
+        router.replace(`/modulos/${slug}`);
+        return;
+      }
+
       if (raw) {
         const parsed = JSON.parse(raw) as {
           code: string;

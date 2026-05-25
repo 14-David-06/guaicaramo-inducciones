@@ -14,6 +14,7 @@ export interface CertHtmlData {
   codigo: string;
   issuedAt: string;
   firmaPng: string;    // data URL — employee signature
+  hrFirmaPng?: string; // data URL — HR signature (server-side only, never sent to browser)
 }
 
 const MONTHS = [
@@ -135,7 +136,9 @@ body{background:#f0f2f0;display:flex;justify-content:center;padding:32px 16px;fo
         <div class="h-rule"><span></span><i></i><span></span></div>
         <div class="sig-row">
           <div class="sig-block">
-            <div class="sig-space"></div>
+            ${data.hrFirmaPng
+              ? `<img src="${data.hrFirmaPng}" alt="Firma Gestión Humana" class="sig-img">`
+              : `<div class="sig-space"></div>`}
             <div class="sig-line"></div>
             <div class="sig-name">Gestión Humana</div>
             <div class="sig-role">Guaicaramo S.A.S.</div>

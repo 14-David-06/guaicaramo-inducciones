@@ -81,6 +81,9 @@ export function Certificate({ slug }: { slug: string }) {
   const mod = findModule(slug);
   const [cert, setCert] = useState<StoredCert | null>(null);
   const [loaded, setLoaded] = useState(false);
+  // Loaded as a blob: URL so there is no direct addressable image URL in the DOM.
+  // The endpoint requires a valid session cookie — unauthenticated requests get 401.
+  const [hrFirmaUrl, setHrFirmaUrl] = useState<string | null>(null);
 
   useEffect(() => {
     try {
@@ -91,6 +94,23 @@ export function Certificate({ slug }: { slug: string }) {
     }
     setLoaded(true);
   }, [slug]);
+
+  // Fetch the HR firma as a blob URL so no direct image URL is ever in the DOM.
+  // Revoke the object URL on unmount to free memory.
+  useEffect(() => {
+    let objectUrl = "";
+    fetch("/api/hr-firma", { credentials: "include" })
+      .then((r) => (r.ok ? r.blob() : null))
+      .then((blob) => {
+        if (!blob) return;
+        objectUrl = URL.createObjectURL(blob);
+        setHrFirmaUrl(objectUrl);
+      })
+      .catch(() => {/* env var not set yet — silently degrade */});
+    return () => {
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, []);
 
   // Backfill nombre if it's missing (cert created before nombre was stored)
   useEffect(() => {
@@ -220,7 +240,17 @@ export function Certificate({ slug }: { slug: string }) {
 
               <div className="sig-row">
                 <div className="sig-block">
-                  <div className="sig-space" />
+                  {hrFirmaUrl ? (
+                    <img
+                      src={hrFirmaUrl}
+                      alt="Firma Gestión Humana"
+                      className="sig-img"
+                      draggable={false}
+                      style={{ pointerEvents: "none", userSelect: "none" }}
+                    />
+                  ) : (
+                    <div className="sig-space" />
+                  )}
                   <div className="sig-line" />
                   <div className="sig-name">Gestión Humana</div>
                   <div className="sig-role">Guaicaramo S.A.S.</div>

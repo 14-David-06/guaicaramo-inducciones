@@ -8,6 +8,7 @@
 import chromium from "@sparticuz/chromium-min";
 import puppeteer from "puppeteer-core";
 import { generateCertHtml, type CertHtmlData } from "./cert-html";
+import { decryptString } from "./crypto";
 
 // Pinned Chromium build that matches @sparticuz/chromium-min expectations.
 // Override in production env if needed via CHROMIUM_REMOTE_EXEC_PATH.
@@ -24,7 +25,23 @@ async function getExecutablePath(): Promise<string> {
 }
 
 export async function generateCertPdfBuffer(data: CertHtmlData): Promise<Buffer> {
-  const html = generateCertHtml(data).toString("utf-8");
+  // Load the HR signature from the env var (Vercel secret).
+  // Supports both encrypted ("v1.…") and legacy plain base64 values.
+  const hrFirmaEnv = process.env.HR_FIRMA_B64;
+  let hrFirmaPng: string | undefined;
+  if (hrFirmaEnv) {
+    try {
+      const rawBase64 = hrFirmaEnv.startsWith("v1.")
+        ? decryptString(hrFirmaEnv)
+        : hrFirmaEnv;
+      hrFirmaPng = `data:image/png;base64,${rawBase64}`;
+    } catch {
+      // Decryption failure → render without firma (don't crash the PDF)
+      hrFirmaPng = undefined;
+    }
+  }
+
+  const html = generateCertHtml({ ...data, hrFirmaPng }).toString("utf-8");
 
   const executablePath = await getExecutablePath();
 
