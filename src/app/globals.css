@@ -1242,6 +1242,21 @@ a.mcard {
   color: var(--color-moss);
   font-weight: 500;
 }
+.mp-skip-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  margin-left: 6px;
+  font-size: 13px;
+  color: rgba(12, 31, 21, 0.4);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+.mp-skip-btn:hover {
+  color: var(--color-moss);
+}
 @media (max-width: 768px) {
   .mp-hero {
     padding-top: 84px;
@@ -2061,7 +2076,7 @@ a.mcard {
   flex: 1;
   gap: 4px;
 }
-.sig-space { height: 50px; }
+.sig-space { height: 90px; }
 .sig-line {
   width: 80%;
   max-width: 170px;
@@ -2118,41 +2133,60 @@ a.mcard {
     background: #fff !important;
     padding: 0 !important;
     margin: 0 !important;
-    display: block !important;
-    min-height: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
   }
   .cert-toolbar { display: none !important; }
-  .cert-page { gap: 0 !important; }
+  .cert-page { gap: 0 !important; flex: 1 !important; display: flex !important; flex-direction: column !important; }
   .cert-wrap {
     width: 100% !important;
     max-width: 100% !important;
     margin: 0 !important;
+    flex: 1 !important;
+    display: flex !important;
+    flex-direction: column !important;
   }
   .certificate {
-    width: 100% !important;
-    padding: 8px !important;
+    flex: 1 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    padding: 6px !important;
     page-break-inside: avoid;
   }
-  .cert-content { padding: 18px 40px 14px !important; }
-  .cert-title { font-size: 24px !important; margin-bottom: 10px !important; }
-  .cert-name { font-size: 34px !important; margin-bottom: 2px !important; }
-  .cert-cedula { margin-bottom: 10px !important; }
+  .cert-inner {
+    flex: 1 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+  }
+  .cert-content {
+    flex: 1 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    padding: 22px 40px 20px !important;
+  }
+  .h-rule { margin-top: auto !important; margin-bottom: 12px !important; }
+  .cert-empresa { font-size: 32px !important; margin-bottom: 10px !important; }
+  .cert-title { font-size: 28px !important; margin-bottom: 16px !important; }
+  .constar { font-size: 16px !important; margin-bottom: 10px !important; }
+  .cert-name { font-size: 42px !important; margin-bottom: 4px !important; }
+  .cert-cedula { font-size: 16px !important; margin-bottom: 14px !important; }
   .cert-body-text {
-    font-size: 12px !important;
-    line-height: 1.6 !important;
-    margin-bottom: 14px !important;
+    font-size: 12.5px !important;
+    line-height: 1.7 !important;
+    margin-bottom: 16px !important;
   }
-  .sig-space { height: 36px !important; }
-  .sig-row { margin-bottom: 10px !important; }
-  .h-rule { margin-bottom: 10px !important; }
+  .sig-space { height: 85px !important; }
+  .sig-row { margin-bottom: 12px !important; }
+  .h-rule { margin-bottom: 12px !important; }
   .chevron-band,
-  .chevron-band-bottom { height: 32px !important; }
+  .chevron-band-bottom { height: 40px !important; }
   .chev-item, .chev-item-l {
-    border-top-width: 16px !important;
-    border-bottom-width: 16px !important;
+    border-top-width: 20px !important;
+    border-bottom-width: 20px !important;
   }
-  .watermark { width: 220px !important; height: 220px !important; }
-  .watermark-text { font-size: 80px !important; }
+  .watermark { width: 230px !important; height: 230px !important; }
+  .watermark-text { font-size: 86px !important; }
   .chevron-band,
   .chevron-band-bottom,
   .orange-line,
@@ -2168,7 +2202,8 @@ a.mcard {
     print-color-adjust: exact !important;
     color-adjust: exact !important;
   }
-  @page { size: A4 landscape; margin: 6mm; }
+  .bottom-info { padding-top: 8px !important; }
+  @page { size: A4 landscape; margin: 4mm; }
 }
 
 @media (max-width: 720px) {
@@ -2180,16 +2215,16 @@ a.mcard {
 }
 
 .sig-img {
-  width: 80%;
-  max-width: 180px;
-  height: 50px;
+  width: 90%;
+  max-width: 240px;
+  height: 90px;
   object-fit: contain;
   display: block;
   margin: 0 auto;
 }
 @media print {
   .sig-img {
-    height: 36px !important;
+    height: 70px !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }

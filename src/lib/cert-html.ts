@@ -88,25 +88,37 @@ body{background:#f0f2f0;display:flex;justify-content:center;padding:32px 16px;fo
 .h-rule i{width:7px;height:7px;border-radius:50%;background:#e65100;flex-shrink:0;display:block;}
 .sig-row{display:flex;justify-content:space-between;width:100%;gap:20px;margin-bottom:18px;}
 .sig-block{display:flex;flex-direction:column;align-items:center;flex:1;gap:4px;}
-.sig-space{height:50px;}
-.sig-img{max-height:50px;max-width:170px;object-fit:contain;}
+.sig-space{height:90px;}
+.sig-img{max-height:90px;max-width:240px;object-fit:contain;}
 .sig-line{width:80%;max-width:170px;height:1px;background:#999;}
 .sig-name{font-size:11.5px;font-weight:700;color:#1b5e20;text-align:center;}
 .sig-role{font-size:9.5px;color:#bbb;text-transform:uppercase;letter-spacing:0.08em;text-align:center;}
 .bottom-info{display:flex;align-items:center;justify-content:space-between;font-size:10px;color:#bbb;letter-spacing:0.06em;border-top:1px solid #eee;padding-top:10px;margin-top:4px;gap:12px;flex-wrap:wrap;}
 .date-val{color:#2e7d32;font-weight:700;font-size:11px;}
 @media print{
-  body{background:#fff!important;padding:0!important;}
-  .certificate{width:100%!important;padding:8px!important;}
-  .cert-content{padding:18px 40px 14px!important;}
-  .cert-title{font-size:24px!important;}
-  .cert-name{font-size:34px!important;}
-  .chevron-band,.chevron-band-bottom{height:32px!important;}
-  .chev-item,.chev-item-l{border-top-width:16px!important;border-bottom-width:16px!important;}
-  .watermark{width:220px!important;height:220px!important;}
-  .watermark-text{font-size:80px!important;}
+  html,body{height:202mm!important;margin:0!important;padding:0!important;display:block!important;}
+  .cert-wrap{height:100%!important;max-width:100%!important;display:flex!important;flex-direction:column!important;}
+  .certificate{flex:1!important;display:flex!important;flex-direction:column!important;padding:6px!important;}
+  .cert-inner{flex:1!important;display:flex!important;flex-direction:column!important;overflow:hidden!important;}
+  .cert-content{flex:1!important;display:flex!important;flex-direction:column!important;padding:22px 40px 20px!important;}
+  .h-rule{margin-top:auto!important;margin-bottom:12px!important;}
+  .cert-empresa{font-size:32px!important;margin-bottom:10px!important;}
+  .cert-title{font-size:28px!important;margin-bottom:16px!important;}
+  .constar{font-size:16px!important;margin-bottom:10px!important;}
+  .cert-name{font-size:42px!important;margin-bottom:4px!important;}
+  .cert-cedula{font-size:16px!important;margin-bottom:14px!important;}
+  .cert-body-text{font-size:12.5px!important;line-height:1.7!important;margin-bottom:0!important;}
+  .sig-row{margin-bottom:12px!important;}
+  .sig-space{height:85px!important;}
+  .sig-img{max-height:85px!important;}
+  .bottom-info{padding-top:8px!important;}
+  .chevron-band,.chevron-band-bottom{height:40px!important;flex-shrink:0!important;}
+  .chev-item,.chev-item-l{border-top-width:20px!important;border-bottom-width:20px!important;}
+  .orange-line{flex-shrink:0!important;}
+  .watermark{width:230px!important;height:230px!important;}
+  .watermark-text{font-size:86px!important;}
   .chevron-band,.chevron-band-bottom,.orange-line,.certificate,.cert-empresa,.cert-title,.cert-name,.cert-body-text strong,.date-val,.sig-name,.h-rule i{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}
-  @page{size:A4 landscape;margin:6mm;}
+  @page{size:A4 landscape;margin:4mm;}
 }
 </style>
 </head>

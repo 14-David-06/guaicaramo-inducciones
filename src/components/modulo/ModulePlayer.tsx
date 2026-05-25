@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 type Props = {
   slug: string;
@@ -18,10 +19,23 @@ export function ModulePlayer({
   nextHref,
   nextLabel,
 }: Props) {
+  const router = useRouter();
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const maxWatchedRef = useRef(0);
   const [progress, setProgress] = useState(0);
   const [completed, setCompleted] = useState(false);
+
+  function handleSkip() {
+    setCompleted(true);
+    setProgress(1);
+    maxWatchedRef.current = Number.POSITIVE_INFINITY;
+    try {
+      localStorage.setItem(`gc-mod-${slug}-completed`, "1");
+    } catch {
+      /* ignore */
+    }
+    router.push(nextHref);
+  }
 
   useEffect(() => {
     try {
@@ -144,7 +158,16 @@ export function ModulePlayer({
       </div>
 
       <div className="mp-hint">
-        El botón <em>{nextLabel}</em> se habilita cuando termine el video.
+        El botón <em>{nextLabel}</em> se habilita cuando termine el video.{" "}
+        {/* {!completed && (
+          <button
+            type="button"
+            className="mp-skip-btn"
+            onClick={handleSkip}
+          >
+            Saltar video
+          </button>
+        )} */}
       </div>
     </div>
   );

@@ -58,7 +58,7 @@ export async function generateCertPdfBuffer(data: CertHtmlData): Promise<Buffer>
     const pdf = await page.pdf({
       format: "A4",
       landscape: true,
-      margin: { top: "6mm", right: "6mm", bottom: "6mm", left: "6mm" },
+      margin: { top: "4mm", right: "4mm", bottom: "4mm", left: "4mm" },
       printBackground: true,
     });
     return Buffer.from(pdf);
