@@ -129,7 +129,7 @@ export async function sendCertNotification(data: CertMailData): Promise<void> {
         },
       ],
     },
-    saveToSentItems: false,
+    saveToSentItems: true,
   };
 
   const graphRes = await fetch(
