@@ -78,8 +78,42 @@ export function ModulePlayer({
     };
   }, [slug]);
 
+  const isDev = process.env.NODE_ENV === "development";
+
+  function skipForDev() {
+    const v = videoRef.current;
+    maxWatchedRef.current = Number.POSITIVE_INFINITY;
+    if (v) v.currentTime = v.duration || 0;
+    setCompleted(true);
+    setProgress(1);
+    try { localStorage.setItem(`gc-mod-${slug}-completed`, "1"); } catch { /* ignore */ }
+  }
+
   return (
-    <div className="mp-player-col">
+    <div className="mp-player-col" style={isDev ? { position: "relative" } : undefined}>
+      {isDev && !completed && (
+        <button
+          type="button"
+          onClick={skipForDev}
+          style={{
+            position: "absolute",
+            top: 8,
+            right: 8,
+            zIndex: 99,
+            padding: "2px 10px",
+            fontSize: "0.7rem",
+            background: "#f59e0b",
+            color: "#000",
+            border: "none",
+            borderRadius: 4,
+            cursor: "pointer",
+            fontWeight: 600,
+            opacity: 0.85,
+          }}
+        >
+          ⚡ Saltar (dev)
+        </button>
+      )}
       <div className={"mp-player " + (completed ? "is-done" : "")}>
         <video
           ref={videoRef}

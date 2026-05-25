@@ -13,7 +13,7 @@ export interface CertHtmlData {
   topics: string[];
   codigo: string;
   issuedAt: string;
-  firmaPng: string; // data URL
+  firmaPng: string;    // data URL — employee signature
 }
 
 const MONTHS = [
