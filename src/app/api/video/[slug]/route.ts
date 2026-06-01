@@ -1,26 +1,41 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
+import { issueSignedToken, presignUrl } from "@vercel/blob";
+import type { IssuedSignedToken } from "@vercel/blob";
 import { COOKIE_NAME, verifySessionCookieValue } from "@/lib/session-cookie";
 import { MODULES } from "@/lib/modules-data";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const BLOB_STORE_HOST =
-  "7kksyp4x7tikshye.private.blob.vercel-storage.com";
+// How long issued credentials stay valid. Long enough that a single viewing
+// session never outlives the signed URL, short enough to limit link sharing.
+const TOKEN_TTL_MS = 12 * 60 * 60 * 1000; // 12 h
+// Re-issue the delegation token a bit before it expires.
+const REFRESH_BEFORE_MS = 30 * 60 * 1000; // 30 min
 
-// Only forward these response headers from the upstream to the client.
-const FORWARDED_HEADERS = [
-  "content-type",
-  "content-length",
-  "content-range",
-  "accept-ranges",
-  "last-modified",
-  "etag",
-];
+// In-memory cache of the store-wide delegation token (scoped to "*", get/head).
+// Reused across requests so we don't hit the Blob control API on every play.
+let cachedToken: { token: IssuedSignedToken; expiresAt: number } | null = null;
+
+async function getSignedToken(rwToken: string): Promise<IssuedSignedToken> {
+  const now = Date.now();
+  if (cachedToken && cachedToken.expiresAt - REFRESH_BEFORE_MS > now) {
+    return cachedToken.token;
+  }
+  const validUntil = now + TOKEN_TTL_MS;
+  const token = await issueSignedToken({
+    pathname: "*",
+    operations: ["get", "head"],
+    validUntil,
+    token: rwToken,
+  });
+  cachedToken = { token, expiresAt: validUntil };
+  return token;
+}
 
 export async function GET(
-  req: NextRequest,
+  _req: NextRequest,
   { params }: { params: Promise<{ slug: string }> },
 ) {
   // ── Auth ──────────────────────────────────────────────────────────────────
@@ -35,72 +50,41 @@ export async function GET(
 
   // ── Resolve blob path ─────────────────────────────────────────────────────
   const { slug } = await params;
-  const module = MODULES.find((m) => m.slug === slug);
-  if (!module?.blobPath) {
+  const moduleData = MODULES.find((m) => m.slug === slug);
+  if (!moduleData?.blobPath) {
     return NextResponse.json({ error: "Video no encontrado" }, { status: 404 });
   }
 
-  const token = process.env.BLOB_READ_WRITE_TOKEN;
-  if (!token) {
+  const rwToken = process.env.BLOB_READ_WRITE_TOKEN;
+  if (!rwToken) {
     return NextResponse.json(
       { error: "Configuración de almacenamiento incompleta" },
       { status: 500 },
     );
   }
 
-  // ── Proxy to private Vercel Blob ──────────────────────────────────────────
-  // Encode the path, preserving any path segments.
-  const encodedPath = module.blobPath
-    .split("/")
-    .map((seg) => encodeURIComponent(seg))
-    .join("/");
-  const blobUrl = `https://${BLOB_STORE_HOST}/${encodedPath}`;
-
-  const upstreamHeaders: HeadersInit = {
-    Authorization: `Bearer ${token}`,
-  };
-
-  // Forward Range header so video seeking works correctly.
-  const range = req.headers.get("range");
-  if (range) upstreamHeaders["Range"] = range;
-
-  let upstream: Response;
+  // ── Generate a short-lived signed URL and redirect ────────────────────────
+  // The browser then streams the video DIRECTLY from the Vercel Blob CDN
+  // (native HTTP Range support, no serverless function in the data path),
+  // which eliminates the buffering caused by proxying multi-GB files.
   try {
-    upstream = await fetch(blobUrl, { headers: upstreamHeaders });
+    const signedToken = await getSignedToken(rwToken);
+    const { presignedUrl } = await presignUrl(signedToken, {
+      operation: "get",
+      pathname: moduleData.blobPath,
+      access: "private",
+      validUntil: Date.now() + TOKEN_TTL_MS,
+    });
+
+    // 307 keeps the GET method; the URL itself is short-lived so it cannot be
+    // shared permanently. Tell the browser not to cache the redirect.
+    const res = NextResponse.redirect(presignedUrl, 307);
+    res.headers.set("cache-control", "private, no-store");
+    return res;
   } catch {
     return NextResponse.json(
-      { error: "Error al obtener el video" },
+      { error: "No se pudo preparar el video" },
       { status: 502 },
     );
   }
-
-  if (!upstream.ok && upstream.status !== 206) {
-    return NextResponse.json(
-      { error: "Video no disponible" },
-      { status: upstream.status },
-    );
-  }
-
-  // Build response headers — only forward safe, relevant headers.
-  const resHeaders = new Headers();
-  for (const name of FORWARDED_HEADERS) {
-    const val = upstream.headers.get(name);
-    if (val) resHeaders.set(name, val);
-  }
-  // Allow the browser's private disk cache to store segments.
-  // This is essential for smooth video seeking — without it every Range
-  // request re-flows through this proxy even when replaying already-seen
-  // parts. "private" keeps it browser-only (no shared/CDN cache); "immutable"
-  // tells the browser never to revalidate, so already-buffered ranges are
-  // served instantly from disk on scrub-back / replay.
-  resHeaders.set("cache-control", "private, max-age=31536000, immutable");
-  // Explicit hint so browsers know range requests are supported.
-  if (!resHeaders.has("accept-ranges")) {
-    resHeaders.set("accept-ranges", "bytes");
-  }
-
-  return new Response(upstream.body, {
-    status: upstream.status,
-    headers: resHeaders,
-  });
 }
