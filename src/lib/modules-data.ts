@@ -18,6 +18,10 @@ export type ModuleData = {
   topics: string[];
   topicGroups?: TopicGroup[];
   objective: string;
+  /** Vercel Blob private path (e.g. "Video Induccion Guacaramo Capitulo 1.mp4"). Served via /api/video/[slug]. */
+  blobPath?: string;
+  iframeSrc?: string;
+  durationSec?: number;
 };
 
 export const MODULES: ModuleData[] = [
@@ -41,6 +45,8 @@ export const MODULES: ModuleData[] = [
     ],
     objective:
       "Comprender el propósito de Guaicaramo y los seis pilares que sostienen cada decisión.",
+    blobPath: "Video Induccion Guacaramo Capitulo 1.mp4",
+    durationSec: 600,
   },
   {
     slug: "bienestar-social",
@@ -60,6 +66,9 @@ export const MODULES: ModuleData[] = [
     ],
     objective:
       "Apropiar las prácticas de cuidado humano y comunitario que vivimos a diario.",
+    iframeSrc:
+      "https://guaica-my.sharepoint.com/:v:/g/personal/operaciones_web_guaicaramo_com/IQDrSkxtv3r-RbFNdsy16pXNASff00uWDiBSiL8vIygrYPQ?nav=eyJyZWZlcnJhbEluZm8iOnsicmVmZXJyYWxBcHAiOiJPbmVEcml2ZUZvckJ1c2luZXNzIiwicmVmZXJyYWxBcHBQbGF0Zm9ybSI6IldlYiIsInJlZmVycmFsTW9kZSI6InZpZXciLCJyZWZlcnJhbFZpZXciOiJNeUZpbGVzTGlua0NvcHkifX0&e=12YVla",
+    durationSec: 1200,
   },
   {
     slug: "seguridad-y-salud",
@@ -125,6 +134,9 @@ export const MODULES: ModuleData[] = [
     ],
     objective:
       "Reconocer riesgos, aplicar controles y responder ante emergencias en la operación.",
+    iframeSrc:
+      "https://guaica-my.sharepoint.com/:v:/g/personal/operaciones_web_guaicaramo_com/IQALWn8gel50Q4x1Hijoha0aAUzgu4PcCqfRKmT-GPmMbck?nav=eyJyZWZlcnJhbEluZm8iOnsicmVmZXJyYWxBcHAiOiJPbmVEcml2ZUZvckJ1c2luZXNzIiwicmVmZXJyYWxBcHBQbGF0Zm9ybSI6IldlYiIsInJlZmVycmFsTW9kZSI6InZpZXciLCJyZWZlcnJhbFZpZXciOiJNeUZpbGVzTGlua0NvcHkifX0&e=7rASzI",
+    durationSec: 1800,
   },
   {
     slug: "gestion-ambiental",
@@ -147,6 +159,8 @@ export const MODULES: ModuleData[] = [
     ],
     objective:
       "Operar bajo prácticas que regeneran el ecosistema en cada hectárea de Guaicaramo.",
+    iframeSrc:
+      "https://guaica-my.sharepoint.com/personal/operaciones_web_guaicaramo_com/_layouts/15/embed.aspx?UniqueId=93e42788-2023-44a6-ad99-aeb31321be46&embed=%7B%22ust%22%3Atrue%2C%22hv%22%3A%22CopyEmbedCode%22%7D&referrer=StreamWebApp&referrerScenario=EmbedDialog.Create%22%20width=%22853%22%20height=%22480%22%20frameborder=%220%22%20scrolling=%22no%22%20allowfullscreen%20title=%22Video%20Induccion%20Guacaramo%20Capitulo%204.mp4",
   },
   {
     slug: "sistemas-integrados-de-gestion",
@@ -164,5 +178,8 @@ export const MODULES: ModuleData[] = [
     ],
     objective:
       "Sostener los estándares y certificaciones que acreditan nuestra excelencia.",
+    iframeSrc:
+      "https://guaica-my.sharepoint.com/:v:/g/personal/operaciones_web_guaicaramo_com/IQDMYNuqI8qMTYINSItXgVvSAaraxun7VnIwUX7Bf1uv_wk?nav=eyJyZWZlcnJhbEluZm8iOnsicmVmZXJyYWxBcHAiOiJPbmVEcml2ZUZvckJ1c2luZXNzIiwicmVmZXJyYWxBcHBQbGF0Zm9ybSI6IldlYiIsInJlZmVycmFsTW9kZSI6InZpZXciLCJyZWZlcnJhbFZpZXciOiJNeUZpbGVzTGlua0NvcHkifX0&e=SHRco4",
+    durationSec: 1200,
   },
 ];

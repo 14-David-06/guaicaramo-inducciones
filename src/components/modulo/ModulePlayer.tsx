@@ -2,11 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 
 type Props = {
   slug: string;
-  videoSrc: string;
+  videoSrc?: string;
+  iframeSrc?: string;
+  durationSec?: number;
   poster: string;
   nextHref: string;
   nextLabel: string;
@@ -15,27 +16,16 @@ type Props = {
 export function ModulePlayer({
   slug,
   videoSrc,
+  iframeSrc,
+  durationSec = 0,
   poster,
   nextHref,
   nextLabel,
 }: Props) {
-  const router = useRouter();
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const maxWatchedRef = useRef(0);
   const [progress, setProgress] = useState(0);
   const [completed, setCompleted] = useState(false);
-
-  function handleSkip() {
-    setCompleted(true);
-    setProgress(1);
-    maxWatchedRef.current = Number.POSITIVE_INFINITY;
-    try {
-      localStorage.setItem(`gc-mod-${slug}-completed`, "1");
-    } catch {
-      /* ignore */
-    }
-    router.push(nextHref);
-  }
 
   useEffect(() => {
     try {
@@ -49,26 +39,45 @@ export function ModulePlayer({
     }
   }, [slug]);
 
+  // Native <video> progress tracking
   useEffect(() => {
+    if (iframeSrc) return;
     const v = videoRef.current;
     if (!v) return;
-    const SEEK_TOLERANCE = 0.75; // max delta accepted as continuous playback
+    // Allow a tiny gap for normal playback jitter / frame rounding.
+    const PLAY_TOLERANCE = 0.3;
     let lastTime = v.currentTime;
+    let isSeeking = false;
+
     const onTime = () => {
       const t = v.currentTime;
-      // Only advance the watched marker on continuous playback (small forward delta).
-      if (t > lastTime && t - lastTime <= SEEK_TOLERANCE) {
+      // Only advance the high-water mark during genuine forward playback,
+      // never during a seek (which also fires timeupdate).
+      if (
+        !isSeeking &&
+        t > lastTime &&
+        t - lastTime <= PLAY_TOLERANCE
+      ) {
         if (t > maxWatchedRef.current) maxWatchedRef.current = t;
       }
       lastTime = t;
       if (v.duration > 0) setProgress(t / v.duration);
     };
-    const clampSeek = () => {
-      // Allow seeking backward freely; block seeking past the furthest watched point.
-      if (v.currentTime > maxWatchedRef.current + SEEK_TOLERANCE) {
+    const onSeekStart = () => {
+      isSeeking = true;
+      // Immediately clamp: if the target is ahead of what was watched, snap back.
+      if (v.currentTime > maxWatchedRef.current) {
         v.currentTime = maxWatchedRef.current;
         lastTime = maxWatchedRef.current;
       }
+    };
+    const onSeeked = () => {
+      // Final clamp after seek settles.
+      if (v.currentTime > maxWatchedRef.current) {
+        v.currentTime = maxWatchedRef.current;
+        lastTime = maxWatchedRef.current;
+      }
+      isSeeking = false;
     };
     const onEnd = () => {
       setCompleted(true);
@@ -81,32 +90,64 @@ export function ModulePlayer({
       }
     };
     v.addEventListener("timeupdate", onTime);
-    v.addEventListener("seeking", clampSeek);
-    v.addEventListener("seeked", clampSeek);
+    v.addEventListener("seeking", onSeekStart);
+    v.addEventListener("seeked", onSeeked);
     v.addEventListener("ended", onEnd);
     return () => {
       v.removeEventListener("timeupdate", onTime);
-      v.removeEventListener("seeking", clampSeek);
-      v.removeEventListener("seeked", clampSeek);
+      v.removeEventListener("seeking", onSeekStart);
+      v.removeEventListener("seeked", onSeeked);
       v.removeEventListener("ended", onEnd);
     };
-  }, [slug]);
+  }, [slug, iframeSrc]);
+
+  // iframe timer: counts seconds only while the tab is visible
+  useEffect(() => {
+    if (!iframeSrc || durationSec <= 0 || completed) return;
+    let elapsed = 0;
+    const tick = () => {
+      if (document.visibilityState !== "visible") return;
+      elapsed += 1;
+      setProgress(Math.min(elapsed / durationSec, 1));
+      if (elapsed >= durationSec) {
+        setCompleted(true);
+        try {
+          localStorage.setItem(`gc-mod-${slug}-completed`, "1");
+        } catch {
+          /* ignore */
+        }
+      }
+    };
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [slug, iframeSrc, durationSec, completed]);
 
   return (
     <div className="mp-player-col">
       <div className={"mp-player " + (completed ? "is-done" : "")}>
-        <video
-          ref={videoRef}
-          className="mp-video"
-          controls
-          controlsList="nodownload noplaybackrate"
-          disablePictureInPicture
-          poster={poster}
-          preload="metadata"
-          playsInline
-        >
-          <source src={videoSrc} type="video/mp4" />
-        </video>
+        {iframeSrc ? (
+          <iframe
+            className="mp-video"
+            src={iframeSrc}
+            allowFullScreen
+            allow="autoplay"
+            title="Video del módulo"
+          />
+        ) : (
+          <video
+            ref={videoRef}
+            className="mp-video mp-video-locked"
+            controls
+            controlsList="nodownload noplaybackrate"
+            disablePictureInPicture
+            disableRemotePlayback
+            poster={poster}
+            preload="metadata"
+            playsInline
+          >
+            <source src={videoSrc} type="video/mp4" />
+          </video>
+        )}
 
         <div className="mp-progress" aria-hidden="true">
           <div
@@ -158,7 +199,11 @@ export function ModulePlayer({
       </div>
 
       <div className="mp-hint">
-        El botón <em>{nextLabel}</em> se habilita cuando termine el video.
+        {iframeSrc ? (
+          "El botón se habilita al terminar el video. El contador avanza solo mientras esta pestaña está activa."
+        ) : (
+          <>El botón <em>{nextLabel}</em> se habilita cuando termine el video.</>
+        )}
       </div>
     </div>
   );

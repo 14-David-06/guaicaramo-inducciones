@@ -151,7 +151,15 @@ export default async function ModulePage({
 
             <ModulePlayer
               slug={m.slug}
-              videoSrc={VIDEO_URL}
+              videoSrc={
+                m.blobPath
+                  ? `/api/video/${m.slug}`
+                  : m.iframeSrc
+                    ? undefined
+                    : VIDEO_URL
+              }
+              iframeSrc={m.blobPath ? undefined : m.iframeSrc}
+              durationSec={m.durationSec}
               poster={m.bg}
               nextHref={nextHref}
               nextLabel={nextLabel}

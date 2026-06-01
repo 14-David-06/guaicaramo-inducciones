@@ -1128,6 +1128,18 @@ a.mcard {
   width: 100%;
   aspect-ratio: 16 / 9;
   background: #000;
+  border: none;
+}
+/* Disable the native seek/timeline scrubber so users cannot skip ahead.
+   Blink/WebKit (Chrome, Edge, Safari) expose the controls via shadow-DOM
+   pseudo-elements. Firefox falls back to the JS clamp in ModulePlayer. */
+.mp-video-locked::-webkit-media-controls-timeline {
+  pointer-events: none;
+  opacity: 0.4;
+}
+.mp-video-locked::-webkit-media-controls-current-time-display,
+.mp-video-locked::-webkit-media-controls-time-remaining-display {
+  pointer-events: none;
 }
 .mp-progress {
   height: 3px;
