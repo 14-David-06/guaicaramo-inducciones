@@ -10,7 +10,33 @@ const _cookieName = (process.env.COOKIE_NAME ?? "")
   .replace(/^["']|["']$/g, "");
 if (!_cookieName) throw new Error("Missing COOKIE_NAME env variable");
 export const COOKIE_NAME: string = _cookieName;
-const TTL_S = 24 * 60 * 60; // 24 h
+
+/**
+ * Two independent limits, mirroring an access/refresh-token model but expressed
+ * inside a single signed httpOnly cookie (the cookie itself is the long-lived,
+ * server-held credential — there is no token in the browser's JS at all):
+ *
+ *  - INACTIVITY_TTL_S: the session closes if no authenticated request is made
+ *    within this window. Every authenticated request slides it forward.
+ *  - ABSOLUTE_TTL_S: a hard ceiling on total session lifetime, regardless of
+ *    activity. Once reached the session cannot be renewed.
+ */
+export const INACTIVITY_TTL_S = 60 * 60; // 1 h of inactivity
+export const ABSOLUTE_TTL_S = 12 * 60 * 60; // 12 h hard cap
+
+export type SessionStatus =
+  | "valid" // signature ok, active and within absolute lifetime
+  | "inactive" // signature ok, but idle past INACTIVITY_TTL_S
+  | "expired" // signature ok, but past ABSOLUTE_TTL_S
+  | "invalid"; // missing, malformed or bad signature
+
+export interface SessionState {
+  status: SessionStatus;
+  /** Unix seconds the session was first created (preserved across renewals). */
+  issuedAt: number;
+  /** Unix seconds of the last recorded activity. */
+  lastActivity: number;
+}
 
 function getSecret(): string {
   // Accept either SESSION_SECRET (preferred) or the older SIGNATURE_ENCRYPTION_KEY
@@ -46,51 +72,101 @@ function fromBase64Url(s: string): ArrayBuffer {
   return u.buffer as ArrayBuffer;
 }
 
-/** Create a signed cookie value: `<expiry_ts>.<hmac>` */
-export async function createSessionCookieValue(): Promise<string> {
-  const expiry = (Math.floor(Date.now() / 1000) + TTL_S).toString();
+/** Create a fresh session cookie value: `<issuedAt>.<lastActivity>.<hmac>` */
+export async function createSessionCookieValue(now = nowS()): Promise<string> {
+  return signSession(now, now);
+}
+
+/**
+ * Re-issue a cookie for an existing session, resetting the inactivity counter
+ * while preserving the original `issuedAt` (so the absolute cap still applies).
+ */
+export async function slideSessionCookieValue(
+  issuedAt: number,
+  now = nowS(),
+): Promise<string> {
+  return signSession(issuedAt, now);
+}
+
+async function signSession(issuedAt: number, lastActivity: number): Promise<string> {
+  const payload = `${issuedAt}.${lastActivity}`;
   const key = await importKey(getSecret());
   const sig = await crypto.subtle.sign(
     "HMAC",
     key,
-    new TextEncoder().encode(expiry),
+    new TextEncoder().encode(payload),
   );
-  return `${expiry}.${toBase64Url(sig)}`;
+  return `${payload}.${toBase64Url(sig)}`;
 }
 
-/** Returns true if the value is a valid, unexpired signed session cookie. */
-export async function verifySessionCookieValue(
-  value: string,
-): Promise<boolean> {
-  try {
-    const dot = value.indexOf(".");
-    if (dot === -1) return false;
-    const expiry = value.slice(0, dot);
-    const sigPart = value.slice(dot + 1);
-    if (!expiry || !sigPart) return false;
+function nowS(): number {
+  return Math.floor(Date.now() / 1000);
+}
 
-    const now = Math.floor(Date.now() / 1000);
-    if (parseInt(expiry, 10) < now) return false;
+/**
+ * Parse and validate a session cookie. Distinguishes a tampered/malformed
+ * cookie (`invalid`) from a genuine session that has gone idle (`inactive`) or
+ * exceeded its absolute lifetime (`expired`), so callers can return precise
+ * error codes.
+ */
+export async function readSessionCookieValue(
+  value: string | undefined | null,
+): Promise<SessionState> {
+  const empty: SessionState = { status: "invalid", issuedAt: 0, lastActivity: 0 };
+  try {
+    if (!value) return empty;
+    const parts = value.split(".");
+    if (parts.length !== 3) return empty;
+    const [issuedRaw, lastRaw, sigPart] = parts;
+    const issuedAt = parseInt(issuedRaw, 10);
+    const lastActivity = parseInt(lastRaw, 10);
+    if (!Number.isFinite(issuedAt) || !Number.isFinite(lastActivity)) return empty;
 
     const key = await importKey(getSecret());
-    return crypto.subtle.verify(
+    const valid = await crypto.subtle.verify(
       "HMAC",
       key,
       fromBase64Url(sigPart),
-      new TextEncoder().encode(expiry),
+      new TextEncoder().encode(`${issuedRaw}.${lastRaw}`),
     );
+    if (!valid) return empty;
+
+    const now = nowS();
+    if (now - issuedAt >= ABSOLUTE_TTL_S) {
+      return { status: "expired", issuedAt, lastActivity };
+    }
+    if (now - lastActivity >= INACTIVITY_TTL_S) {
+      return { status: "inactive", issuedAt, lastActivity };
+    }
+    return { status: "valid", issuedAt, lastActivity };
   } catch {
-    return false;
+    return empty;
   }
 }
 
+/** Convenience boolean check (true only when the session is fully valid). */
+export async function verifySessionCookieValue(value: string): Promise<boolean> {
+  return (await readSessionCookieValue(value)).status === "valid";
+}
+
 /** Cookie attributes to use when setting the session cookie. */
-export function sessionCookieOptions(maxAge = TTL_S) {
+export function sessionCookieOptions(maxAge = INACTIVITY_TTL_S) {
   return {
     httpOnly: true,
     sameSite: "lax" as const,
     path: "/",
     maxAge,
+    secure: process.env.NODE_ENV === "production",
+  };
+}
+
+/** Attributes to expire/clear the session cookie. */
+export function clearSessionCookieOptions() {
+  return {
+    httpOnly: true,
+    sameSite: "lax" as const,
+    path: "/",
+    maxAge: 0,
     secure: process.env.NODE_ENV === "production",
   };
 }

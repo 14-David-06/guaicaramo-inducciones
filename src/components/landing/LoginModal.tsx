@@ -4,12 +4,14 @@ import { useEffect, useRef, useState } from "react";
 
 interface LoginModalProps {
   open: boolean;
+  notice?: string | null;
   onClose: () => void;
   onSuccess: (nombre: string, cedula: string) => void;
 }
 
 /* Rendered only while open — unmounts completely on close, backdrop gone */
 function LoginModalContent({
+  notice,
   onClose,
   onSuccess,
 }: Omit<LoginModalProps, "open">) {
@@ -134,6 +136,12 @@ function LoginModalContent({
           </button>
         </div>
 
+        {notice && (
+          <div className="login-error login-error--info" role="status">
+            <span>{notice}</span>
+          </div>
+        )}
+
         {/* form */}
         <form onSubmit={handleSubmit} className="login-modal-form" noValidate>
           <div className="login-field">
@@ -213,7 +221,9 @@ function LoginModalContent({
   );
 }
 
-export function LoginModal({ open, onClose, onSuccess }: LoginModalProps) {
+export function LoginModal({ open, notice, onClose, onSuccess }: LoginModalProps) {
   if (!open) return null;
-  return <LoginModalContent onClose={onClose} onSuccess={onSuccess} />;
+  return (
+    <LoginModalContent notice={notice} onClose={onClose} onSuccess={onSuccess} />
+  );
 }

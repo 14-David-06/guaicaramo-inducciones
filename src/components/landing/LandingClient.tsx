@@ -35,9 +35,26 @@ function writeSession(cedula: string) {
 export function LandingClient() {
   const [loginOpen, setLoginOpen] = useState(false);
   const [authenticated, setAuthenticated] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
   const searchParams = useSearchParams();
 
   useEffect(() => {
+    const reason = searchParams.get("reason");
+    if (reason === "inactive" || reason === "expired") {
+      // The server-side session ended; drop the stale client flag and force
+      // the user to re-authenticate.
+      try {
+        localStorage.removeItem(SESSION_KEY);
+      } catch { /* storage unavailable */ }
+      setAuthenticated(false);
+      setLoginOpen(true);
+      setNotice(
+        reason === "inactive"
+          ? "Tu sesión expiró por inactividad. Inicia sesión de nuevo."
+          : "Tu sesión finalizó. Inicia sesión de nuevo.",
+      );
+      return;
+    }
     if (readSession()) {
       setAuthenticated(true);
     } else if (searchParams.get("login") === "1" || searchParams.get("auth") === "required") {
@@ -52,6 +69,7 @@ export function LandingClient() {
 
   function handleAuthSuccess(_nombre: string, cedula: string) {
     writeSession(cedula);
+    setNotice(null);
     setAuthenticated(true);
     const returnTo = searchParams.get("next") ?? searchParams.get("return");
     if (returnTo?.startsWith("/modulos/")) {
@@ -73,7 +91,11 @@ export function LandingClient() {
       <Footer />
       <LoginModal
         open={loginOpen}
-        onClose={() => setLoginOpen(false)}
+        notice={notice}
+        onClose={() => {
+          setNotice(null);
+          setLoginOpen(false);
+        }}
         onSuccess={handleAuthSuccess}
       />
     </>

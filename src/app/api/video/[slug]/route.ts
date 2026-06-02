@@ -2,7 +2,12 @@ import { type NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { issueSignedToken, presignUrl } from "@vercel/blob";
 import type { IssuedSignedToken } from "@vercel/blob";
-import { COOKIE_NAME, verifySessionCookieValue } from "@/lib/session-cookie";
+import { COOKIE_NAME } from "@/lib/session-cookie";
+import {
+  authErrorResponse,
+  checkSession,
+  setRenewedSessionCookie,
+} from "@/lib/api-auth";
 import { MODULES } from "@/lib/modules-data";
 
 export const runtime = "nodejs";
@@ -40,12 +45,9 @@ export async function GET(
 ) {
   // ── Auth ──────────────────────────────────────────────────────────────────
   const cookieStore = await cookies();
-  const sessionCookie = cookieStore.get(COOKIE_NAME);
-  if (
-    !sessionCookie?.value ||
-    !(await verifySessionCookieValue(sessionCookie.value))
-  ) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  const session = await checkSession(cookieStore.get(COOKIE_NAME)?.value);
+  if (!session.ok) {
+    return authErrorResponse(session.code);
   }
 
   // ── Resolve blob path ─────────────────────────────────────────────────────
@@ -80,6 +82,8 @@ export async function GET(
     // shared permanently. Tell the browser not to cache the redirect.
     const res = NextResponse.redirect(presignedUrl, 307);
     res.headers.set("cache-control", "private, no-store");
+    // This is an authenticated request → slide the inactivity window.
+    setRenewedSessionCookie(res, session.renewedCookie);
     return res;
   } catch {
     return NextResponse.json(
