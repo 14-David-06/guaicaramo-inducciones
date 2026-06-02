@@ -10,7 +10,9 @@ import { Footer } from "./Footer";
 import { LoginModal } from "./LoginModal";
 
 const SESSION_KEY = "gai_auth_session";
-const SESSION_TTL = 24 * 60 * 60 * 1000; // 24 h
+// Keep the client-side flag aligned with the server cookie's absolute lifetime
+// (see ABSOLUTE_TTL_S in session-cookie.ts) to limit client/server drift.
+const SESSION_TTL = 12 * 60 * 60 * 1000; // 12 h
 
 function readSession(): boolean {
   try {
@@ -40,25 +42,34 @@ export function LandingClient() {
 
   useEffect(() => {
     const reason = searchParams.get("reason");
-    if (reason === "inactive" || reason === "expired") {
-      // The server-side session ended; drop the stale client flag and force
-      // the user to re-authenticate.
+    // Any of these means the server redirected us here because our session was
+    // missing, invalid or expired. The client-side localStorage flag can be
+    // stale (e.g. after the session cookie expired or its format changed), so
+    // we must NOT trust it here — clear it and force re-authentication. This
+    // prevents an infinite bounce where the grid looks unlocked but every
+    // module request is rejected by the server and the login modal never opens.
+    const serverBounced =
+      searchParams.get("login") === "1" ||
+      searchParams.get("auth") === "required" ||
+      reason === "inactive" ||
+      reason === "expired";
+
+    if (serverBounced) {
       try {
         localStorage.removeItem(SESSION_KEY);
       } catch { /* storage unavailable */ }
       setAuthenticated(false);
       setLoginOpen(true);
-      setNotice(
-        reason === "inactive"
-          ? "Tu sesión expiró por inactividad. Inicia sesión de nuevo."
-          : "Tu sesión finalizó. Inicia sesión de nuevo.",
-      );
+      if (reason === "inactive") {
+        setNotice("Tu sesión expiró por inactividad. Inicia sesión de nuevo.");
+      } else if (reason === "expired") {
+        setNotice("Tu sesión finalizó. Inicia sesión de nuevo.");
+      }
       return;
     }
+
     if (readSession()) {
       setAuthenticated(true);
-    } else if (searchParams.get("login") === "1" || searchParams.get("auth") === "required") {
-      setLoginOpen(true);
     }
   }, [searchParams]);
 
@@ -72,11 +83,12 @@ export function LandingClient() {
     setNotice(null);
     setAuthenticated(true);
     const returnTo = searchParams.get("next") ?? searchParams.get("return");
-    if (returnTo?.startsWith("/modulos/")) {
-      // Hard navigation to bypass the Next.js router cache, which in production
-      // holds a prefetch redirect for /modulos/* (proxy blocked it pre-login).
-      window.location.href = returnTo;
-    }
+    const dest = returnTo?.startsWith("/modulos/") ? returnTo : "/#modulos";
+    // Always hard-navigate after login: this discards the Next.js client router
+    // cache (which may hold a pre-login 307 redirect for /modulos/*) and drops
+    // the ?login/&reason params, so the page re-renders cleanly using the fresh
+    // session cookie just set by /api/auth/login.
+    window.location.href = dest;
   }
 
   return (

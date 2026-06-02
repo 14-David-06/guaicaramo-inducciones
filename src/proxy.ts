@@ -33,7 +33,10 @@ export async function proxy(req: NextRequest): Promise<NextResponse> {
     if (session.status === "valid") {
       // Active request → slide the inactivity window forward (silent renewal).
       const res = NextResponse.next();
-      const renewed = await slideSessionCookieValue(session.issuedAt);
+      const renewed = await slideSessionCookieValue(
+        session.cedula,
+        session.issuedAt,
+      );
       res.cookies.set(COOKIE_NAME, renewed, sessionCookieOptions());
       return res;
     }

@@ -45,7 +45,7 @@ export const MODULES: ModuleData[] = [
     ],
     objective:
       "Comprender el propósito de Guaicaramo y los seis pilares que sostienen cada decisión.",
-    blobPath: "Video Induccion Guacaramo Capitulo 1.mp4",
+    blobPath: "modulo-1.mp4",
     durationSec: 600,
   },
   {
@@ -66,7 +66,7 @@ export const MODULES: ModuleData[] = [
     ],
     objective:
       "Apropiar las prácticas de cuidado humano y comunitario que vivimos a diario.",
-    blobPath: "Video Induccion Guacaramo Capitulo 2.mp4",
+    blobPath: "modulo-2.mp4",
     durationSec: 1200,
   },
   {
@@ -133,7 +133,7 @@ export const MODULES: ModuleData[] = [
     ],
     objective:
       "Reconocer riesgos, aplicar controles y responder ante emergencias en la operación.",
-    blobPath: "Video Induccion Guacaramo Capitulo 3.mp4",
+    blobPath: "modulo-3.mp4",
     durationSec: 1800,
   },
   {
@@ -157,7 +157,7 @@ export const MODULES: ModuleData[] = [
     ],
     objective:
       "Operar bajo prácticas que regeneran el ecosistema en cada hectárea de Guaicaramo.",
-    blobPath: "Video Induccion Guacaramo Capitulo 4.mp4",
+    blobPath: "modulo-4.mp4",
     durationSec: 1200,
   },
   {
@@ -176,7 +176,7 @@ export const MODULES: ModuleData[] = [
     ],
     objective:
       "Sostener los estándares y certificaciones que acreditan nuestra excelencia.",
-    blobPath: "Video Induccion Guacaramo Capitulo 5.mp4",
+    blobPath: "modulo-5.mp4",
     durationSec: 1200,
   },
 ];

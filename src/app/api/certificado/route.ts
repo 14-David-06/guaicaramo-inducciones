@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import {
   crearCertificado,
   findEmpleado,
@@ -8,6 +9,9 @@ import { encryptString, sha256Hex } from "@/lib/crypto";
 import { generateCertPdfBuffer } from "@/lib/cert-puppeteer";
 import { sendCertNotification } from "@/lib/mailer";
 import { MODULES } from "@/lib/modules-data";
+import { COOKIE_NAME } from "@/lib/session-cookie";
+import { authErrorResponse, checkSession } from "@/lib/api-auth";
+import { isSameOrigin } from "@/lib/http-security";
 
 const MAX_FIRMA_BYTES = 200_000; // ~200 KB raw base64 PNG
 const FIRMA_DATA_URL_RE = /^data:image\/png;base64,[A-Za-z0-9+/=]+$/;
@@ -33,6 +37,17 @@ function rateLimit(ip: string) {
 }
 
 export async function POST(req: Request) {
+  if (!isSameOrigin(req)) {
+    return NextResponse.json({ error: "Origen no permitido." }, { status: 403 });
+  }
+
+  // Require an active, valid session bound to an employee.
+  const cookieStore = await cookies();
+  const session = await checkSession(cookieStore.get(COOKIE_NAME)?.value);
+  if (!session.ok) {
+    return authErrorResponse(session.code);
+  }
+
   const ip =
     req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
     req.headers.get("x-real-ip") ||
@@ -61,6 +76,13 @@ export async function POST(req: Request) {
 
   if (cedula.length < 6 || cedula.length > 12) {
     return NextResponse.json({ error: "Cédula inválida" }, { status: 400 });
+  }
+  // The certificate may only be issued for the authenticated employee.
+  if (cedula !== session.cedula) {
+    return NextResponse.json(
+      { error: "La cédula no corresponde a la sesión activa." },
+      { status: 403 },
+    );
   }
   if (!/^\d{1,3}$/.test(moduloNum) || !/^[a-z0-9-]{2,60}$/.test(moduloSlug)) {
     return NextResponse.json({ error: "Módulo inválido" }, { status: 400 });

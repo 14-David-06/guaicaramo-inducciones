@@ -54,7 +54,7 @@ function codeForStatus(status: Exclude<SessionStatus, "valid">): AuthCode {
 }
 
 export type SessionCheck =
-  | { ok: true; issuedAt: number; renewedCookie: string }
+  | { ok: true; cedula: string; issuedAt: number; renewedCookie: string }
   | { ok: false; code: AuthCode };
 
 /**
@@ -72,8 +72,16 @@ export async function checkSession(
     return { ok: false, code: codeForStatus(state.status) };
   }
 
-  const renewedCookie = await slideSessionCookieValue(state.issuedAt);
-  return { ok: true, issuedAt: state.issuedAt, renewedCookie };
+  const renewedCookie = await slideSessionCookieValue(
+    state.cedula,
+    state.issuedAt,
+  );
+  return {
+    ok: true,
+    cedula: state.cedula,
+    issuedAt: state.issuedAt,
+    renewedCookie,
+  };
 }
 
 /** Attach a silently-renewed session cookie to an outgoing response. */

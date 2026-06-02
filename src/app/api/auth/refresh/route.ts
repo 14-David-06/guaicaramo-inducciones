@@ -7,6 +7,7 @@ import {
   checkSession,
   setRenewedSessionCookie,
 } from "@/lib/api-auth";
+import { isSameOrigin } from "@/lib/http-security";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -37,6 +38,10 @@ function rateLimit(ip: string): boolean {
  * session cannot be revived.
  */
 export async function POST(req: Request) {
+  if (!isSameOrigin(req)) {
+    return NextResponse.json({ error: "Origen no permitido." }, { status: 403 });
+  }
+
   const ip =
     req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
     req.headers.get("x-real-ip") ||

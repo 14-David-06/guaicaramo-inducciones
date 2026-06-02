@@ -5,6 +5,7 @@ import {
   sessionCookieOptions,
   COOKIE_NAME,
 } from "@/lib/session-cookie";
+import { isSameOrigin } from "@/lib/http-security";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -28,6 +29,10 @@ function rateLimit(ip: string) {
 
 /* ---------- handler ---------- */
 export async function POST(req: Request) {
+  if (!isSameOrigin(req)) {
+    return NextResponse.json({ error: "Origen no permitido." }, { status: 403 });
+  }
+
   const ip =
     req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
     req.headers.get("x-real-ip") ||
@@ -95,7 +100,7 @@ export async function POST(req: Request) {
         { status: 200 }
       );
     }
-    const cookieValue = await createSessionCookieValue();
+    const cookieValue = await createSessionCookieValue(cedula);
     const res = NextResponse.json(
       { ok: true, nombre: emp.nombre },
       { status: 200 }

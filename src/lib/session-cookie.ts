@@ -32,6 +32,8 @@ export type SessionStatus =
 
 export interface SessionState {
   status: SessionStatus;
+  /** Cédula (digits only) of the authenticated employee bound to this session. */
+  cedula: string;
   /** Unix seconds the session was first created (preserved across renewals). */
   issuedAt: number;
   /** Unix seconds of the last recorded activity. */
@@ -72,24 +74,40 @@ function fromBase64Url(s: string): ArrayBuffer {
   return u.buffer as ArrayBuffer;
 }
 
-/** Create a fresh session cookie value: `<issuedAt>.<lastActivity>.<hmac>` */
-export async function createSessionCookieValue(now = nowS()): Promise<string> {
-  return signSession(now, now);
+function sanitizeCedula(cedula: string): string {
+  return (cedula ?? "").replace(/\D/g, "");
+}
+
+/**
+ * Create a fresh session cookie value bound to an employee:
+ * `<cedula>.<issuedAt>.<lastActivity>.<hmac>`
+ */
+export async function createSessionCookieValue(
+  cedula: string,
+  now = nowS(),
+): Promise<string> {
+  return signSession(sanitizeCedula(cedula), now, now);
 }
 
 /**
  * Re-issue a cookie for an existing session, resetting the inactivity counter
- * while preserving the original `issuedAt` (so the absolute cap still applies).
+ * while preserving the original `issuedAt` (so the absolute cap still applies)
+ * and the bound cédula.
  */
 export async function slideSessionCookieValue(
+  cedula: string,
   issuedAt: number,
   now = nowS(),
 ): Promise<string> {
-  return signSession(issuedAt, now);
+  return signSession(sanitizeCedula(cedula), issuedAt, now);
 }
 
-async function signSession(issuedAt: number, lastActivity: number): Promise<string> {
-  const payload = `${issuedAt}.${lastActivity}`;
+async function signSession(
+  cedula: string,
+  issuedAt: number,
+  lastActivity: number,
+): Promise<string> {
+  const payload = `${cedula}.${issuedAt}.${lastActivity}`;
   const key = await importKey(getSecret());
   const sig = await crypto.subtle.sign(
     "HMAC",
@@ -112,14 +130,21 @@ function nowS(): number {
 export async function readSessionCookieValue(
   value: string | undefined | null,
 ): Promise<SessionState> {
-  const empty: SessionState = { status: "invalid", issuedAt: 0, lastActivity: 0 };
+  const empty: SessionState = {
+    status: "invalid",
+    cedula: "",
+    issuedAt: 0,
+    lastActivity: 0,
+  };
   try {
     if (!value) return empty;
     const parts = value.split(".");
-    if (parts.length !== 3) return empty;
-    const [issuedRaw, lastRaw, sigPart] = parts;
+    if (parts.length !== 4) return empty;
+    const [cedulaRaw, issuedRaw, lastRaw, sigPart] = parts;
+    const cedula = sanitizeCedula(cedulaRaw);
     const issuedAt = parseInt(issuedRaw, 10);
     const lastActivity = parseInt(lastRaw, 10);
+    if (!cedula) return empty;
     if (!Number.isFinite(issuedAt) || !Number.isFinite(lastActivity)) return empty;
 
     const key = await importKey(getSecret());
@@ -127,18 +152,18 @@ export async function readSessionCookieValue(
       "HMAC",
       key,
       fromBase64Url(sigPart),
-      new TextEncoder().encode(`${issuedRaw}.${lastRaw}`),
+      new TextEncoder().encode(`${cedulaRaw}.${issuedRaw}.${lastRaw}`),
     );
     if (!valid) return empty;
 
     const now = nowS();
     if (now - issuedAt >= ABSOLUTE_TTL_S) {
-      return { status: "expired", issuedAt, lastActivity };
+      return { status: "expired", cedula, issuedAt, lastActivity };
     }
     if (now - lastActivity >= INACTIVITY_TTL_S) {
-      return { status: "inactive", issuedAt, lastActivity };
+      return { status: "inactive", cedula, issuedAt, lastActivity };
     }
-    return { status: "valid", issuedAt, lastActivity };
+    return { status: "valid", cedula, issuedAt, lastActivity };
   } catch {
     return empty;
   }

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { clearSessionCookie } from "@/lib/api-auth";
+import { isSameOrigin } from "@/lib/http-security";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -9,7 +10,10 @@ export const dynamic = "force-dynamic";
  * signed cookie (no server-side token store), clearing the cookie ends the
  * session immediately for this browser.
  */
-export async function POST() {
+export async function POST(req: Request) {
+  if (!isSameOrigin(req)) {
+    return NextResponse.json({ error: "Origen no permitido." }, { status: 403 });
+  }
   const res = NextResponse.json({ ok: true }, { status: 200 });
   return clearSessionCookie(res);
 }

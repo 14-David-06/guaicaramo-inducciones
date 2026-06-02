@@ -1,14 +1,16 @@
 import { NextResponse } from "next/server";
 import { findCertificadoFirma } from "@/lib/airtable";
 import { decryptString } from "@/lib/crypto";
+import { safeEqual } from "@/lib/http-security";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /**
  * Devuelve la firma desencriptada (PNG en base64) de un certificado.
- * Requiere el header `x-admin-token` con el valor de
- * SIGNATURE_ENCRYPTION_KEY (usado como secreto compartido para ver firmas).
+ * Requiere el header `x-admin-token`. El secreto se toma de ADMIN_TOKEN
+ * (preferido); si no está definido, se acepta SIGNATURE_ENCRYPTION_KEY como
+ * compatibilidad. La comparación es de tiempo constante.
  *
  * Uso:
  *   GET /api/certificado/firma?codigo=GC-01-552176-260427
@@ -17,9 +19,10 @@ export const dynamic = "force-dynamic";
  *     -> binario image/png (para abrir directo en el navegador)
  */
 export async function GET(req: Request) {
-  const token = req.headers.get("x-admin-token");
-  const expected = process.env.SIGNATURE_ENCRYPTION_KEY;
-  if (!expected || !token || token !== expected) {
+  const token = req.headers.get("x-admin-token") ?? "";
+  const expected =
+    process.env.ADMIN_TOKEN || process.env.SIGNATURE_ENCRYPTION_KEY || "";
+  if (!expected || !token || !safeEqual(token, expected)) {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   }
 

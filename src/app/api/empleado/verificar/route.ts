@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { findEmpleado } from "@/lib/airtable";
+import { COOKIE_NAME } from "@/lib/session-cookie";
+import { authErrorResponse, checkSession } from "@/lib/api-auth";
+import { isSameOrigin } from "@/lib/http-security";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -22,6 +26,18 @@ function rateLimit(ip: string) {
 }
 
 export async function POST(req: Request) {
+  if (!isSameOrigin(req)) {
+    return NextResponse.json({ error: "Origen no permitido." }, { status: 403 });
+  }
+
+  // Require an active session: a user may only look up their own record. This
+  // prevents anonymous enumeration of employees and their names (PII).
+  const cookieStore = await cookies();
+  const session = await checkSession(cookieStore.get(COOKIE_NAME)?.value);
+  if (!session.ok) {
+    return authErrorResponse(session.code);
+  }
+
   const ip =
     req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
     req.headers.get("x-real-ip") ||
@@ -51,6 +67,14 @@ export async function POST(req: Request) {
     return NextResponse.json(
       { exists: false, reason: "format" },
       { status: 200 }
+    );
+  }
+
+  // Only allow looking up the cédula bound to the current session.
+  if (cedula !== session.cedula) {
+    return NextResponse.json(
+      { exists: false, reason: "forbidden" },
+      { status: 403 }
     );
   }
 
