@@ -12,6 +12,7 @@ const TABS = [
 
 type CursorPos = { left: number; width: number; opacity: number };
 
+
 export function Header({
   showNav = true,
   onModulosClick,
@@ -62,7 +63,6 @@ export function Header({
         </ul>
       )}
 
-      
     </nav>
   );
 }
