@@ -38,6 +38,10 @@ export async function proxy(req: NextRequest): Promise<NextResponse> {
         session.issuedAt,
       );
       res.cookies.set(COOKIE_NAME, renewed, sessionCookieOptions());
+      // Prevent browser/CDN from caching authenticated pages so that
+      // back/forward navigation always passes through this proxy check.
+      res.headers.set("Cache-Control", "no-store, no-cache, must-revalidate");
+      res.headers.set("Pragma", "no-cache");
       return res;
     }
 

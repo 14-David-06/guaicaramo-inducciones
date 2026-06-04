@@ -156,7 +156,7 @@ export function ModulePlayer({
           />
         </div>
 
-        <div className="mp-player-foot">
+<div className="mp-player-foot">
           <div className="mp-status">
             {completed ? (
               <>

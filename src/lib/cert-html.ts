@@ -73,15 +73,15 @@ body{background:#f0f2f0;display:flex;justify-content:center;padding:32px 16px;fo
 .chev-item{width:0;height:0;border-top:23px solid transparent;border-bottom:23px solid transparent;border-left:18px solid rgba(255,255,255,0.22);margin-left:3px;}
 .chev-item-l{width:0;height:0;border-top:23px solid transparent;border-bottom:23px solid transparent;border-right:18px solid rgba(255,255,255,0.22);margin-right:3px;}
 .orange-line{height:5px;background:linear-gradient(to right,#e65100,#ff8f00,#e65100);}
-.cert-content{padding:28px 60px 24px;position:relative;}
+.cert-content{padding:28px 72px 16px;position:relative;}
 .watermark{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:260px;height:260px;border-radius:50%;border:1px solid rgba(46,125,50,0.07);box-shadow:0 0 0 30px rgba(46,125,50,0.03),0 0 0 60px rgba(46,125,50,0.02);pointer-events:none;display:flex;align-items:center;justify-content:center;}
 .watermark-text{font-family:'Playfair Display',serif;font-size:96px;font-weight:700;color:rgba(46,125,50,0.05);line-height:1;user-select:none;}
-.cert-empresa{font-size:30px;font-weight:800;letter-spacing:0.24em;text-transform:uppercase;color:#2e7d32;text-align:center;margin-bottom:10px;}
-.cert-title{font-family:'Playfair Display',serif;font-size:32px;font-weight:700;color:#1b5e20;text-align:center;letter-spacing:0.01em;line-height:1.1;margin-bottom:18px;}
-.constar{font-size:18px;font-weight:700;color:#1b3a23;text-align:center;margin-bottom:10px;letter-spacing:0.04em;}
-.cert-name{font-family:'Playfair Display',serif;font-size:42px;font-style:italic;font-weight:500;color:#1b5e20;text-align:center;line-height:1.1;margin-bottom:4px;}
-.cert-cedula{font-size:18px;font-weight:600;color:#555;text-align:center;margin-bottom:16px;letter-spacing:0.06em;}
-.cert-body-text{font-size:13px;color:#555;line-height:1.9;text-align:center;margin:0 auto 20px;max-width:720px;}
+.cert-empresa{font-family:'Playfair Display',serif;font-size:58px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#1b5e20;text-align:center;margin-bottom:18px;line-height:1.05;}
+.cert-title{font-family:'Playfair Display',serif;font-size:38px;font-weight:700;color:#1b5e20;text-align:center;letter-spacing:0.01em;line-height:1.05;margin-bottom:24px;}
+.constar{font-size:14px;color:#888;text-align:center;margin-bottom:14px;letter-spacing:0.05em;}
+.cert-name{font-family:'Playfair Display',serif;font-size:46px;font-style:italic;font-weight:500;color:#1b5e20;text-align:center;line-height:1.1;margin-bottom:12px;}
+.cert-cedula{font-size:14px;color:#444;font-weight:600;text-align:center;margin-bottom:20px;letter-spacing:0.06em;}
+.cert-body-text{font-size:15.5px;color:#555;line-height:1.7;text-align:center;margin:0 auto 10px;max-width:780px;}
 .cert-body-text strong{color:#1b5e20;}
 .h-rule{display:flex;align-items:center;gap:10px;margin-bottom:16px;}
 .h-rule span{flex:1;height:1px;background:#e8e8e8;}
@@ -102,9 +102,9 @@ body{background:#f0f2f0;display:flex;justify-content:center;padding:32px 16px;fo
   .cert-inner{flex:1!important;display:flex!important;flex-direction:column!important;overflow:hidden!important;}
   .cert-content{flex:1!important;display:flex!important;flex-direction:column!important;padding:22px 40px 20px!important;}
   .h-rule{margin-top:auto!important;margin-bottom:12px!important;}
-  .cert-empresa{font-size:32px!important;margin-bottom:10px!important;}
-  .cert-title{font-size:28px!important;margin-bottom:16px!important;}
-  .constar{font-size:16px!important;margin-bottom:10px!important;}
+  .cert-empresa{font-size:48px!important;margin-bottom:14px!important;}
+  .cert-title{font-size:32px!important;margin-bottom:18px!important;}
+  .constar{font-size:13px!important;margin-bottom:10px!important;}
   .cert-name{font-size:42px!important;margin-bottom:4px!important;}
   .cert-cedula{font-size:16px!important;margin-bottom:14px!important;}
   .cert-body-text{font-size:12.5px!important;line-height:1.7!important;margin-bottom:0!important;}
@@ -135,8 +135,8 @@ body{background:#f0f2f0;display:flex;justify-content:center;padding:32px 16px;fo
           <div class="watermark-text">G</div>
         </div>
         <div class="cert-empresa">Guaicaramo S.A.S.</div>
-        <div class="cert-title">${certTitle}</div>
         <div class="constar">Se hace constar que</div>
+        <div class="cert-title">${certTitle}</div>
         <div class="cert-name">${nombre}</div>
         <div class="cert-cedula">C.C. <span>${formatCedula(data.cedula)}</span></div>
         <p class="cert-body-text">

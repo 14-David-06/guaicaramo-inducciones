@@ -7,7 +7,7 @@ import {
 } from "@/lib/airtable";
 import { encryptString, sha256Hex } from "@/lib/crypto";
 import { generateCertPdfBuffer } from "@/lib/cert-puppeteer";
-import { sendCertNotification } from "@/lib/mailer";
+import { subirCertificado } from "@/lib/onedrive";
 import { MODULES } from "@/lib/modules-data";
 import { COOKIE_NAME } from "@/lib/session-cookie";
 import { authErrorResponse, checkSession } from "@/lib/api-auth";
@@ -18,7 +18,7 @@ const FIRMA_DATA_URL_RE = /^data:image\/png;base64,[A-Za-z0-9+/=]+$/;
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const maxDuration = 60; // seconds — PDF generation + email can take ~20-40 s
+export const maxDuration = 60; // seconds — PDF generation + OneDrive upload can take ~20-40 s
 
 const RATE_WINDOW_MS = 60_000;
 const RATE_MAX = 10;
@@ -136,6 +136,9 @@ export async function POST(req: Request) {
     // Must be awaited before returning — Vercel terminates the process
     // immediately after the response is sent (no background work allowed).
     const mod = MODULES.find((m) => m.slug === moduloSlug);
+    if (!mod) {
+      console.warn(`[/api/certificado] Módulo no encontrado: ${moduloSlug} — se omite PDF y upload`);
+    }
     if (mod) {
       let certPdfBuffer: Buffer | undefined;
       try {
@@ -156,18 +159,15 @@ export async function POST(req: Request) {
 
       if (certPdfBuffer) {
         try {
-          await sendCertNotification({
-            nombre: empleado.nombre,
-            cedula,
-            moduloNum,
-            moduloTitle: mod.title,
-            codigo: result.codigo,
-            issuedAt: result.emitidoEn,
-            certPdfBuffer,
+          await subirCertificado({
+            nombrePersona: empleado.nombre,
+            modulo: moduloNum,
+            pdfBuffer: certPdfBuffer,
           });
-        } catch (mailErr) {
-          console.error("[/api/certificado] email notification failed:", mailErr);
+        } catch (uploadErr) {
+          console.error("[/api/certificado] OneDrive upload failed:", uploadErr);
         }
+
       }
     }
 
