@@ -150,6 +150,51 @@ export async function crearCertificado(
 }
 
 /**
+ * Devuelve los slugs de módulos que el empleado ya tiene certificados (ej. ["introduccion"]).
+ * Usa el campo enlazado Certificados del registro Personal para evitar filtros de fórmula
+ * poco confiables sobre campos de registro enlazado.
+ * Lanza excepción en errores de red/API para que el llamador decida si omitir la sincronización.
+ */
+export async function getCertificadosDelEmpleado(
+  personalRecordId: string
+): Promise<string[]> {
+  const certsFid      = getEnv("AIRTABLE_FIELD_PERSONAL_CERTIFICADOS_ID");
+  const moduloVerFid  = F.cert.moduloVersion();
+
+  // Step 1 — get the list of certificate record IDs from the Personal record.
+  const r1 = await fetch(
+    `https://api.airtable.com/v0/${getBaseId()}/${getPersonalTableId()}` +
+    `/${encodeURIComponent(personalRecordId)}` +
+    `?returnFieldsByFieldId=true&fields%5B%5D=${certsFid}`,
+    { headers: authHeaders(), cache: "no-store" }
+  );
+  if (!r1.ok) throw new Error(`Personal fetch ${r1.status}`);
+  const d1 = (await r1.json()) as { fields: Record<string, unknown> };
+  const certIds = (d1.fields[certsFid] as string[] | undefined) ?? [];
+  if (certIds.length === 0) return [];
+
+  // Step 2 — fetch those cert records to read moduloVersion.
+  const formula =
+    certIds.length === 1
+      ? `RECORD_ID()="${certIds[0]}"`
+      : `OR(${certIds.map((id) => `RECORD_ID()="${id}"`).join(",")})`;
+  const r2 = await fetch(
+    airtableUrl(
+      getCertificadosTableId(),
+      `?filterByFormula=${encodeURIComponent(formula)}` +
+        `&returnFieldsByFieldId=true&fields%5B%5D=${moduloVerFid}`
+    ),
+    { headers: authHeaders(), cache: "no-store" }
+  );
+  if (!r2.ok) throw new Error(`Certs fetch ${r2.status}`);
+  const d2 = (await r2.json()) as { records?: { fields: Record<string, unknown> }[] };
+  return (d2.records ?? [])
+    .map((r) => String(r.fields[moduloVerFid] ?? "").trim())
+    .filter(Boolean)
+    .map((mv) => mv.replace(/^\d+-/, "")); // "01-introduccion" → "introduccion"
+}
+
+/**
  * Looks up a Certificado record by Codigo. Returns the encrypted Firma blob,
  * or null when not found / no signature stored.
  */

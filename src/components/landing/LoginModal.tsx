@@ -71,6 +71,7 @@ function LoginModalContent({
         nombre?: string;
         error?: string;
         code?: string;
+        completedModules?: string[];
       } = await res.json();
 
       if (res.status === 429) {
@@ -81,6 +82,22 @@ function LoginModalContent({
         setError(data.error ?? "Credenciales incorrectas.");
         setErrorCode(data.code ?? null);
         return;
+      }
+
+      // Sincronizar flags de completado con Airtable.
+      // Solo si el servidor devolvió la lista (null = fallo de red → no tocar localStorage).
+      if (Array.isArray(data.completedModules)) {
+        try {
+          const toRemove: string[] = [];
+          for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key?.startsWith("gc-mod-") && key.endsWith("-completed")) toRemove.push(key);
+          }
+          toRemove.forEach((k) => localStorage.removeItem(k));
+          for (const slug of data.completedModules) {
+            if (slug) localStorage.setItem(`gc-mod-${slug}-completed`, "1");
+          }
+        } catch { /* localStorage no disponible */ }
       }
 
       /* success — close dialog first, then unlock modules */

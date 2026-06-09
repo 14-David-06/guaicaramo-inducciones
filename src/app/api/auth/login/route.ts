@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { findEmpleado, normalizeCedula } from "@/lib/airtable";
+import { findEmpleado, getCertificadosDelEmpleado, normalizeCedula } from "@/lib/airtable";
 import {
   createSessionCookieValue,
   sessionCookieOptions,
@@ -100,9 +100,12 @@ export async function POST(req: Request) {
         { status: 200 }
       );
     }
+    // Si Airtable falla la consulta de certs, omitimos completedModules
+    // para no bloquear el login ni borrar progreso por error de red.
+    const completedModules = await getCertificadosDelEmpleado(emp.recordId).catch(() => null);
     const cookieValue = await createSessionCookieValue(cedula);
     const res = NextResponse.json(
-      { ok: true, nombre: emp.nombre },
+      { ok: true, nombre: emp.nombre, ...(completedModules !== null && { completedModules }) },
       { status: 200 }
     );
     res.cookies.set(COOKIE_NAME, cookieValue, sessionCookieOptions());

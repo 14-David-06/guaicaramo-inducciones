@@ -156,7 +156,7 @@ export function ModulePlayer({
           />
         </div>
 
-<div className="mp-player-foot">
+        <div className="mp-player-foot">
           <div className="mp-status">
             {completed ? (
               <>
@@ -205,6 +205,33 @@ export function ModulePlayer({
           <>El botón <em>{nextLabel}</em> se habilita cuando termine el video.</>
         )}
       </div>
+
+      {process.env.NODE_ENV !== "production" && (
+        <button
+          type="button"
+          onClick={() => {
+            setCompleted(true);
+            setProgress(1);
+            maxWatchedRef.current = Number.POSITIVE_INFINITY;
+            try {
+              localStorage.setItem(`gc-mod-${slug}-completed`, "1");
+            } catch { /* ignore */ }
+          }}
+          style={{
+            marginTop: "8px",
+            padding: "4px 10px",
+            fontSize: "11px",
+            background: "#f59e0b",
+            color: "#000",
+            border: "none",
+            borderRadius: "4px",
+            cursor: "pointer",
+            opacity: 0.8,
+          }}
+        >
+          ⚡ Skip video (test)
+        </button>
+      )}
     </div>
   );
 }
