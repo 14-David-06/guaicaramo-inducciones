@@ -110,8 +110,9 @@ export async function subirCertificado(options: SubirCertificadoOptions): Promis
   const cfg = getConfig();
   const token = await getAccessToken(cfg);
 
+  const año           = new Date().getFullYear();
   const nombreCarpeta = sanitizeFolderName(options.nombrePersona);
-  const folderPath    = `Certificados/${nombreCarpeta}`;
+  const folderPath    = `Certificados/CERTIFICADOS ${año}/${nombreCarpeta}`;
   const filename      = `certificado_modulo_${options.modulo}.pdf`;
   const filePath      = `${folderPath}/${filename}`;
 
