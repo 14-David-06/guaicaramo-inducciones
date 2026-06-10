@@ -6,6 +6,7 @@ import { Header } from "@/components/landing/Header";
 import { Footer } from "@/components/landing/Footer";
 import { MODULES } from "@/lib/modules-data";
 import { ModulePlayer } from "@/components/modulo/ModulePlayer";
+import { ModuleSequenceGuard } from "@/components/modulo/ModuleSequenceGuard";
 
 const VIDEO_URL =
   "https://pub-8559129b6d5e44218087988775476431.r2.dev/videoplayback.mp4";
@@ -44,6 +45,7 @@ export default async function ModulePage({
 
   return (
     <>
+      <ModuleSequenceGuard slug={m.slug} />
       <Header showNav={false} />
 
       <header className="mp-hero">

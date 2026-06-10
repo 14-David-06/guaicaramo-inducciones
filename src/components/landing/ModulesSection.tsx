@@ -344,15 +344,10 @@ const MODULES_WITH_ANIM: Module[] = MODULE_DATA.map((m) => {
   return { ...m, Anim: animMap[m.slug] ?? AnimIntro };
 });
 
-function ModuleCard({ m }: { m: Module }) {
+function ModuleCardInner({ m, locked }: { m: Module; locked: boolean }) {
   const { Anim } = m;
   return (
-    <Link
-      href={`/modulos/${m.slug}`}
-      prefetch={false}
-      className={`mcard span-${m.span}`}
-      aria-label={`Iniciar módulo ${m.num} · ${m.title}`}
-    >
+    <>
       <div
         className="mcard-bg"
         style={{
@@ -365,6 +360,55 @@ function ModuleCard({ m }: { m: Module }) {
       <div className="mcard-anim" aria-hidden="true">
         <Anim />
       </div>
+      {locked && (
+        <div
+          aria-hidden="true"
+          style={{
+            position: "absolute",
+            inset: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "rgba(0,0,0,0.45)",
+            zIndex: 4,
+          }}
+        >
+          <svg
+            viewBox="0 0 48 48"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+            width="52"
+            height="52"
+            style={{ opacity: 0.9 }}
+          >
+            <rect
+              x="8"
+              y="22"
+              width="32"
+              height="22"
+              rx="4"
+              stroke="white"
+              strokeWidth="2.4"
+            />
+            <path
+              d="M16 22v-6a8 8 0 0 1 16 0v6"
+              stroke="white"
+              strokeWidth="2.4"
+              strokeLinecap="round"
+            />
+            <circle cx="24" cy="33" r="3" fill="white" />
+            <line
+              x1="24"
+              y1="36"
+              x2="24"
+              y2="40"
+              stroke="white"
+              strokeWidth="2.4"
+              strokeLinecap="round"
+            />
+          </svg>
+        </div>
+      )}
       <div className="mcard-content">
         <div className="mcard-top">
           <span className="mcard-num">{m.num}</span>
@@ -375,11 +419,41 @@ function ModuleCard({ m }: { m: Module }) {
             {m.chip}
           </div>
           <h3 className="mcard-title">{m.title}</h3>
-          <span className="mcard-cta">
-            Iniciar módulo <span className="arr" />
-          </span>
+          {locked ? (
+            <span className="mcard-cta" style={{ opacity: 0.6 }}>
+              Completa el módulo anterior
+            </span>
+          ) : (
+            <span className="mcard-cta">
+              Iniciar módulo <span className="arr" />
+            </span>
+          )}
         </div>
       </div>
+    </>
+  );
+}
+
+function ModuleCard({ m, locked }: { m: Module; locked: boolean }) {
+  if (locked) {
+    return (
+      <div
+        className={`mcard span-${m.span}`}
+        style={{ cursor: "not-allowed", opacity: 0.6 }}
+        aria-label={`Módulo ${m.num} bloqueado · Completa el módulo anterior para desbloquear`}
+      >
+        <ModuleCardInner m={m} locked />
+      </div>
+    );
+  }
+  return (
+    <Link
+      href={`/modulos/${m.slug}`}
+      prefetch={false}
+      className={`mcard span-${m.span}`}
+      aria-label={`Iniciar módulo ${m.num} · ${m.title}`}
+    >
+      <ModuleCardInner m={m} locked={false} />
     </Link>
   );
 }
@@ -395,6 +469,8 @@ export function ModulesSection({
 }: ModulesSectionProps) {
   const [inView, setInView] = useState(false);
   const gridRef = useRef<HTMLDivElement>(null);
+  const [completedSlugs, setCompletedSlugs] = useState<Set<string>>(new Set());
+  const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
     const el = gridRef.current;
@@ -415,6 +491,26 @@ export function ModulesSection({
     io.observe(el);
     return () => io.disconnect();
   }, []);
+
+  useEffect(() => {
+    if (!authenticated) {
+      setHydrated(false);
+      setCompletedSlugs(new Set());
+      return;
+    }
+    const completed = new Set<string>();
+    for (const m of MODULE_DATA) {
+      try {
+        if (localStorage.getItem(`gc-mod-${m.slug}-completed`) === "1") {
+          completed.add(m.slug);
+        }
+      } catch {
+        /* ignore */
+      }
+    }
+    setCompletedSlugs(completed);
+    setHydrated(true);
+  }, [authenticated]);
 
   return (
     <section className="section dark" id="modulos">
@@ -441,9 +537,14 @@ export function ModulesSection({
             className={`modules-grid${authenticated ? "" : " modules-grid--locked"}${inView ? " in" : ""}`}
             aria-hidden={authenticated ? undefined : true}
           >
-            {MODULES_WITH_ANIM.map((m) => (
-              <ModuleCard key={m.num} m={m} />
-            ))}
+            {MODULES_WITH_ANIM.map((m, idx) => {
+              const isLocked =
+                authenticated &&
+                hydrated &&
+                idx > 0 &&
+                !completedSlugs.has(MODULE_DATA[idx - 1].slug);
+              return <ModuleCard key={m.num} m={m} locked={isLocked} />;
+            })}
           </div>
 
           {!authenticated && (
