@@ -19,6 +19,14 @@ const F = {
     empleado: () => getEnv("AIRTABLE_FIELD_PERSONAL_EMPLEADO_ID"),
     nombre: () => getEnv("AIRTABLE_FIELD_PERSONAL_NOMBRE_ID"),
   },
+  // Slug → env-var name for the Personal module-completion checkbox fields.
+  moduleCheckboxEnvKey: {
+    "introduccion":                    "AIRTABLE_FIELD_PERSONAL_M01_ID",
+    "bienestar-social":                "AIRTABLE_FIELD_PERSONAL_M02_ID",
+    "seguridad-y-salud":               "AIRTABLE_FIELD_PERSONAL_M03_ID",
+    "gestion-ambiental":               "AIRTABLE_FIELD_PERSONAL_M04_ID",
+    "sistemas-integrados-de-gestion":  "AIRTABLE_FIELD_PERSONAL_M05_ID",
+  } as Record<string, string>,
   cert: {
     codigo: () => getEnv("AIRTABLE_FIELD_CERT_CODIGO_ID"),
     hash: () => getEnv("AIRTABLE_FIELD_CERT_HASH_ID"),
@@ -192,6 +200,55 @@ export async function getCertificadosDelEmpleado(
     .map((r) => String(r.fields[moduloVerFid] ?? "").trim())
     .filter(Boolean)
     .map((mv) => mv.replace(/^\d+-/, "")); // "01-introduccion" → "introduccion"
+}
+
+/**
+ * Marca el checkbox del módulo correspondiente en el registro Personal.
+ * Llamada al emitir un certificado. Falla silenciosamente — no interrumpe el flujo.
+ */
+export async function marcarModuloCompletado(
+  personalRecordId: string,
+  moduloSlug: string
+): Promise<void> {
+  const envKey = F.moduleCheckboxEnvKey[moduloSlug];
+  const fieldId = envKey ? process.env[envKey] : undefined;
+  if (!fieldId) return;
+
+  await fetch(
+    `https://api.airtable.com/v0/${getBaseId()}/${getPersonalTableId()}/${encodeURIComponent(personalRecordId)}`,
+    {
+      method: "PATCH",
+      headers: { ...authHeaders(), "content-type": "application/json" },
+      body: JSON.stringify({ fields: { [fieldId]: true } }),
+      cache: "no-store",
+    }
+  );
+}
+
+/**
+ * Sincroniza los 5 checkboxes de módulos del registro Personal con la lista
+ * de slugs completados. Llamada en el login para hacer backfill desde Certificados.
+ */
+export async function sincronizarModulosPersonal(
+  personalRecordId: string,
+  completedSlugs: string[]
+): Promise<void> {
+  const fields: Record<string, boolean> = {};
+  for (const [slug, envKey] of Object.entries(F.moduleCheckboxEnvKey)) {
+    const fieldId = process.env[envKey];
+    if (fieldId) fields[fieldId] = completedSlugs.includes(slug);
+  }
+  if (Object.keys(fields).length === 0) return;
+
+  await fetch(
+    `https://api.airtable.com/v0/${getBaseId()}/${getPersonalTableId()}/${encodeURIComponent(personalRecordId)}`,
+    {
+      method: "PATCH",
+      headers: { ...authHeaders(), "content-type": "application/json" },
+      body: JSON.stringify({ fields }),
+      cache: "no-store",
+    }
+  );
 }
 
 /**

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { findEmpleado, getCertificadosDelEmpleado, normalizeCedula } from "@/lib/airtable";
+import { findEmpleado, getCertificadosDelEmpleado, normalizeCedula, sincronizarModulosPersonal } from "@/lib/airtable";
 import {
   createSessionCookieValue,
   sessionCookieOptions,
@@ -103,6 +103,10 @@ export async function POST(req: Request) {
     // Si Airtable falla la consulta de certs, omitimos completedModules
     // para no bloquear el login ni borrar progreso por error de red.
     const completedModules = await getCertificadosDelEmpleado(emp.recordId).catch(() => null);
+    // Sync module checkboxes in Airtable for management visibility (fire-and-forget).
+    if (completedModules !== null) {
+      sincronizarModulosPersonal(emp.recordId, completedModules).catch(() => { /* ignore */ });
+    }
     const cookieValue = await createSessionCookieValue(cedula);
     const res = NextResponse.json(
       { ok: true, nombre: emp.nombre, ...(completedModules !== null && { completedModules }) },

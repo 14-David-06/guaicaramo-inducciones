@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import {
   crearCertificado,
   findEmpleado,
+  marcarModuloCompletado,
   normalizeCedula,
 } from "@/lib/airtable";
 import { encryptString, sha256Hex } from "@/lib/crypto";
@@ -124,6 +125,9 @@ export async function POST(req: Request) {
       firmaCifrada,
       hashCertificado,
     });
+
+    // Update the module completion checkbox in the Personal record (fire-and-forget).
+    marcarModuloCompletado(empleado.recordId, moduloSlug).catch(() => { /* ignore */ });
 
     const responsePayload = {
       codigo: result.codigo,
