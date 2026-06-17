@@ -48,26 +48,20 @@ function decryptFirma(payload: string): string {
 }
 
 // ---------------------------------------------------------------------------
-// Airtable REST — sin returnFieldsByFieldId para que singleSelect devuelva nombre
+// Airtable REST
 // ---------------------------------------------------------------------------
-const BASE_ID   = "appgZrPLGlP604eXI";
-const CERTS_TBL = "tblTVLy9wIgQIeRVy";
-const PERS_TBL  = "tbllzOqPmjVqZ5u16";
+const BASE_ID   = process.env.AIRTABLE_BASE_ID!;
+const CERTS_TBL = process.env.AIRTABLE_TABLE_CERTIFICADOS_ID!;
+const PERS_TBL  = process.env.AIRTABLE_TABLE_PERSONAL_ID!;
 
 async function atFetch(table: string, recordId: string): Promise<Record<string, unknown>> {
-  const url = `https://api.airtable.com/v0/${BASE_ID}/${table}/${recordId}`;
+  const url = `https://api.airtable.com/v0/${BASE_ID}/${table}/${recordId}?returnFieldsByFieldId=true`;
   const res = await fetch(url, {
     headers: { Authorization: `Bearer ${process.env.AIRTABLE_API_KEY_GUAICARAMO_INDUCCIONES}` },
   });
   if (!res.ok) throw new Error(`Airtable ${res.status}: ${await res.text()}`);
   const body = await res.json() as { fields?: Record<string, unknown> };
   return body.fields ?? {};
-}
-
-// Busca un campo ignorando BOM y mayúsculas/minúsculas
-function getField(fields: Record<string, unknown>, name: string): unknown {
-  const key = Object.keys(fields).find(k => k.replace(/^﻿/, "") === name);
-  return key ? fields[key] : undefined;
 }
 
 // ---------------------------------------------------------------------------
@@ -103,7 +97,7 @@ async function main() {
     try {
       // 1. Firma cifrada desde Airtable
       const certFields = await atFetch(CERTS_TBL, certId);
-      const firmaCifrada = getField(certFields, "Firma Colaborador") as string | undefined;
+      const firmaCifrada = certFields[process.env.AIRTABLE_FIELD_CERT_FIRMA_ID!] as string | undefined;
 
       if (!firmaCifrada) {
         console.warn("  ⚠ Sin firma almacenada — omitiendo");
@@ -115,7 +109,7 @@ async function main() {
       let nombre = nombresCache.get(personalId);
       if (!nombre) {
         const persFields = await atFetch(PERS_TBL, personalId);
-        const raw = (getField(persFields, "Nombre del empleado") as string) ?? "";
+        const raw = (persFields[process.env.AIRTABLE_FIELD_PERSONAL_NOMBRE_ID!] as string) ?? "";
         nombre = raw
           .replace(/[\r\n\t\x00-\x1f\x7f]/g, " ")
           .replace(/\s+/g, " ")

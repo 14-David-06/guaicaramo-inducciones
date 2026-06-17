@@ -14,27 +14,27 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-const BASE_ID = "appeuHinywSARzLWA";
-const ENV_FILE = resolve(process.cwd(), ".env.local");
-
-function loadToken() {
-  if (process.env.AIRTABLE_API_KEY_GUAICARAMO_INDUCCIONES) {
-    return process.env.AIRTABLE_API_KEY_GUAICARAMO_INDUCCIONES;
-  }
-  const text = readFileSync(ENV_FILE, "utf8");
+function loadEnvFile(filePath) {
+  let text;
+  try { text = readFileSync(filePath, "utf8"); } catch { return; }
   for (const raw of text.split(/\r?\n/)) {
     const line = raw.trim();
     if (!line || line.startsWith("#")) continue;
     const eq = line.indexOf("=");
     if (eq < 0) continue;
     const k = line.slice(0, eq).trim();
-    const v = line.slice(eq + 1).trim().replace(/^"(.*)"$/, "$1");
-    if (k === "AIRTABLE_API_KEY_GUAICARAMO_INDUCCIONES") return v;
+    const v = line.slice(eq + 1).trim().replace(/^["']|["']$/g, "");
+    if (!(k in process.env)) process.env[k] = v;
   }
-  throw new Error("Missing AIRTABLE_API_KEY_GUAICARAMO_INDUCCIONES");
 }
 
-const TOKEN = loadToken();
+loadEnvFile(resolve(process.cwd(), ".env"));
+loadEnvFile(resolve(process.cwd(), ".env.local"));
+
+const TOKEN   = process.env.AIRTABLE_API_KEY_GUAICARAMO_INDUCCIONES
+  ?? (() => { throw new Error("Missing AIRTABLE_API_KEY_GUAICARAMO_INDUCCIONES"); })();
+const BASE_ID = process.env.AIRTABLE_BASE_ID
+  ?? (() => { throw new Error("Missing AIRTABLE_BASE_ID"); })();
 
 async function api(method, path, body) {
   const res = await fetch(`https://api.airtable.com/v0${path}`, {
