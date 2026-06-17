@@ -88,7 +88,10 @@ export async function findEmpleado(
   if (!r) return null;
   return {
     recordId: r.id,
-    nombre: String(r.fields[nombreFid] ?? "").trim(),
+    nombre: String(r.fields[nombreFid] ?? "")
+      .replace(/[\r\n\t\x00-\x1f\x7f]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim(),
   };
 }
 

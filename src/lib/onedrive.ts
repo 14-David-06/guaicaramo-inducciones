@@ -46,8 +46,13 @@ function authHeader(token: string) {
 }
 
 function sanitizeFolderName(name: string): string {
-  // OneDrive prohíbe: < > : " / \ | ? *  y nombres que terminen en punto
-  return name.replace(/[<>:"/\\|?*]/g, "_").replace(/\.+$/, "").trim();
+  // OneDrive prohíbe: < > : " / \ | ? * y caracteres de control (incluyendo \n \r)
+  return name
+    .replace(/[\r\n\t\x00-\x1f\x7f]/g, " ")
+    .replace(/[<>:"/\\|?*]/g, "_")
+    .replace(/\s+/g, " ")
+    .replace(/\.+$/, "")
+    .trim();
 }
 
 // Codifica cada segmento del path sin tocar las barras separadoras
