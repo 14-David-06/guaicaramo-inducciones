@@ -33,9 +33,9 @@ function sanitizarNombre(raw: string): string {
     .trim();
 }
 
-const BASE_ID   = "appgZrPLGlP604eXI";
-const TABLE_ID  = "tbllzOqPmjVqZ5u16";
-const NOMBRE_FID = "fldejbnoycwToCGDT";
+const BASE_ID    = process.env.AIRTABLE_BASE_ID!;
+const TABLE_ID   = process.env.AIRTABLE_TABLE_PERSONAL_ID!;
+const NOMBRE_FID = process.env.AIRTABLE_FIELD_PERSONAL_NOMBRE_ID!;
 const PAGE_SIZE  = 100;
 const BATCH_SIZE = 10; // máximo de Airtable por PATCH
 
