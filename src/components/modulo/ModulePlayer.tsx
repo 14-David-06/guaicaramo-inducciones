@@ -144,6 +144,7 @@ export function ModulePlayer({
             poster={poster}
             preload="metadata"
             playsInline
+            onContextMenu={(e) => e.preventDefault()}
           >
             <source src={videoSrc} type="video/mp4" />
           </video>

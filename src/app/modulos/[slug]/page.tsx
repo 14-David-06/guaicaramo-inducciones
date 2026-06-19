@@ -8,9 +8,6 @@ import { MODULES } from "@/lib/modules-data";
 import { ModulePlayer } from "@/components/modulo/ModulePlayer";
 import { ModuleSequenceGuard } from "@/components/modulo/ModuleSequenceGuard";
 
-const VIDEO_URL =
-  "https://pub-8559129b6d5e44218087988775476431.r2.dev/videoplayback.mp4";
-
 type Params = { slug: string };
 
 export function generateStaticParams(): Params[] {
@@ -153,13 +150,7 @@ export default async function ModulePage({
 
             <ModulePlayer
               slug={m.slug}
-              videoSrc={
-                m.blobPath
-                  ? `/api/video/${m.slug}`
-                  : m.iframeSrc
-                    ? undefined
-                    : VIDEO_URL
-              }
+              videoSrc={m.blobPath ? `/api/video/${m.slug}` : undefined}
               iframeSrc={m.blobPath ? undefined : m.iframeSrc}
               durationSec={m.durationSec}
               poster={m.bg}
