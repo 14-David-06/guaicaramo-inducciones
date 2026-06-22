@@ -352,7 +352,7 @@ function ModuleCardInner({ m, locked }: { m: Module; locked: boolean }) {
         className="mcard-bg"
         style={{
           backgroundImage: `url(${m.bg})`,
-          backgroundPosition: m.bgPosition ?? "center",
+          backgroundPosition: m.bgPosition ?? "center top",
         }}
         aria-hidden="true"
       />
@@ -369,7 +369,7 @@ function ModuleCardInner({ m, locked }: { m: Module; locked: boolean }) {
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            background: "rgba(0,0,0,0.45)",
+            background: "rgba(0,0,0,0.22)",
             zIndex: 4,
           }}
         >

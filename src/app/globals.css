@@ -1769,6 +1769,15 @@ a.mcard {
     aspect-ratio: auto;
     min-height: 360px;
   }
+  /* Lighten scrim on mobile so background photos are visible */
+  .mcard-scrim {
+    background: linear-gradient(
+      180deg,
+      rgba(10, 25, 15, 0.05) 0%,
+      rgba(10, 25, 15, 0.18) 40%,
+      rgba(10, 25, 15, 0.70) 100%
+    );
+  }
   .mcard-content {
     padding: 20px;
   }
