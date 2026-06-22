@@ -200,7 +200,11 @@ export async function getCertificadosDelEmpleado(
   if (!r2.ok) throw new Error(`Certs fetch ${r2.status}`);
   const d2 = (await r2.json()) as { records?: { fields: Record<string, unknown> }[] };
   return (d2.records ?? [])
-    .map((r) => String(r.fields[moduloVerFid] ?? "").trim())
+    .map((r) => {
+      const v = r.fields[moduloVerFid];
+      // singleSelect fields come back as {id, name, color} objects, not plain strings.
+      return (v && typeof v === "object" ? (v as { name?: string }).name ?? "" : String(v ?? "")).trim();
+    })
     .filter(Boolean)
     .map((mv) => mv.replace(/^\d+-/, "")); // "01-introduccion" → "introduccion"
 }

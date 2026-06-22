@@ -88,12 +88,20 @@ function LoginModalContent({
       // Solo si el servidor devolvió la lista (null = fallo de red → no tocar localStorage).
       if (Array.isArray(data.completedModules)) {
         try {
-          const toRemove: string[] = [];
-          for (let i = 0; i < localStorage.length; i++) {
-            const key = localStorage.key(i);
-            if (key?.startsWith("gc-mod-") && key.endsWith("-completed")) toRemove.push(key);
+          const normalizedCedula = cedula.replace(/\D/g, "");
+          const lastCedula = localStorage.getItem("gc-session-cedula");
+          if (lastCedula !== normalizedCedula) {
+            // Usuario diferente en este dispositivo — limpiar progreso anterior.
+            const toRemove: string[] = [];
+            for (let i = 0; i < localStorage.length; i++) {
+              const key = localStorage.key(i);
+              if (key?.startsWith("gc-mod-")) toRemove.push(key);
+            }
+            toRemove.forEach((k) => localStorage.removeItem(k));
           }
-          toRemove.forEach((k) => localStorage.removeItem(k));
+          // Guardar cédula activa para detectar cambio de usuario en próximo login.
+          localStorage.setItem("gc-session-cedula", normalizedCedula);
+          // Restaurar módulos certificados desde Airtable (solo agrega, no quita).
           for (const slug of data.completedModules) {
             if (slug) localStorage.setItem(`gc-mod-${slug}-completed`, "1");
           }
