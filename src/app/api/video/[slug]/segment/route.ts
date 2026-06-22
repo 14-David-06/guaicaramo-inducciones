@@ -9,10 +9,15 @@ import { MODULES } from "@/lib/modules-data";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-// Consistent with session TTL. Presigned URLs are embedded in the quality
-// playlist and used directly by HLS.js — the browser never hits Vercel for
-// segment bytes, only for this tiny manifest.
+// Presigned URLs are embedded in the quality playlist and fetched directly
+// by HLS.js from R2 — Vercel only serves this tiny text manifest.
 const SEGMENT_URL_TTL_S = 7200;
+
+// In-memory cache for raw quality playlist content (before presigning).
+// Avoids a round-trip from Vercel → R2 on every quality-level switch.
+// Presigning is a local HMAC op and is always done fresh per request.
+const rawPlaylistCache = new Map<string, { body: string; expiresAt: number }>();
+const RAW_CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 
 function makeS3() {
   return new S3Client({
@@ -49,19 +54,26 @@ export async function GET(
   const key = `${folder}/${file}`;
   const s3 = makeS3();
 
-  let s3Res;
-  try {
-    s3Res = await s3.send(new GetObjectCommand({ Bucket: process.env.R2_BUCKET!, Key: key }));
-  } catch (err) {
-    console.error("[HLS segment] GetObject failed:", key, String(err));
-    return NextResponse.json({ error: "Playlist no encontrado" }, { status: 404 });
+  // Use in-memory cached raw playlist if available — avoids Vercel → R2 round-trip
+  // on quality-level switches. Presigning is always done fresh (local HMAC, no network).
+  let text: string;
+  const cached = rawPlaylistCache.get(key);
+  if (cached && cached.expiresAt > Date.now()) {
+    text = cached.body;
+  } else {
+    let s3Res;
+    try {
+      s3Res = await s3.send(new GetObjectCommand({ Bucket: process.env.R2_BUCKET!, Key: key }));
+    } catch (err) {
+      console.error("[HLS segment] GetObject failed:", key, String(err));
+      return NextResponse.json({ error: "Playlist no encontrado" }, { status: 404 });
+    }
+    text = await s3Res.Body!.transformToString();
+    rawPlaylistCache.set(key, { body: text, expiresAt: Date.now() + RAW_CACHE_TTL_MS });
   }
 
-  const text = await s3Res.Body!.transformToString();
-
-  // Replace every .ts filename with a presigned R2 URL.
-  // getSignedUrl is a local HMAC operation — no network calls, completes in ms.
-  // HLS.js fetches segments directly from R2: zero Vercel bandwidth.
+  // Replace every .ts filename with a fresh presigned R2 URL (local HMAC, ~ms).
+  // HLS.js fetches segments directly from R2 — zero Vercel bandwidth.
   const rewritten = await Promise.all(
     text.split("\n").map((line) => {
       const t = line.trim();
@@ -76,11 +88,13 @@ export async function GET(
     }),
   );
 
+  // Browser may cache this for up to 1 hour (presigned URLs last 2h).
+  // Different users get different presigned URLs but the same underlying segments.
   const response = new NextResponse(rewritten.join("\n"), {
     status: 200,
     headers: {
       "Content-Type": "application/vnd.apple.mpegurl",
-      "Cache-Control": "private, no-store",
+      "Cache-Control": "private, max-age=3600",
     },
   });
   setRenewedSessionCookie(response, session.renewedCookie);
