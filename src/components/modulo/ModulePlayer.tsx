@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Hls from "hls.js";
 import Link from "next/link";
 
 type Props = {
@@ -15,7 +16,6 @@ type Props = {
 
 export function ModulePlayer({
   slug,
-  videoSrc,
   iframeSrc,
   durationSec = 0,
   poster,
@@ -23,6 +23,7 @@ export function ModulePlayer({
   nextLabel,
 }: Props) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const hlsRef = useRef<Hls | null>(null);
   const maxWatchedRef = useRef(0);
   const [progress, setProgress] = useState(0);
   const [completed, setCompleted] = useState(false);
@@ -38,6 +39,41 @@ export function ModulePlayer({
       /* ignore */
     }
   }, [slug]);
+
+  // HLS initialization
+  useEffect(() => {
+    if (iframeSrc) return;
+    const v = videoRef.current;
+    if (!v) return;
+
+    const src = `/api/video/${slug}/master`;
+
+    if (Hls.isSupported()) {
+      const hls = new Hls({
+        startLevel: -1,
+        capLevelToPlayerSize: true,
+        maxBufferLength: 30,
+      });
+      hlsRef.current = hls;
+      hls.on(Hls.Events.ERROR, (_evt, data) => {
+        if (data.fatal) {
+          console.error("[HLS] fatal error", data.type, data.details);
+          if (data.type === Hls.ErrorTypes.NETWORK_ERROR) hls.startLoad();
+          else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) hls.recoverMediaError();
+          else hls.destroy();
+        }
+      });
+      hls.loadSource(src);
+      hls.attachMedia(v);
+      return () => {
+        hls.destroy();
+        hlsRef.current = null;
+      };
+    } else if (v.canPlayType("application/vnd.apple.mpegurl")) {
+      // Safari HLS nativo
+      v.src = src;
+    }
+  }, [slug, iframeSrc]);
 
   // Native <video> progress tracking
   useEffect(() => {
@@ -145,9 +181,7 @@ export function ModulePlayer({
             preload="metadata"
             playsInline
             onContextMenu={(e) => e.preventDefault()}
-          >
-            <source src={videoSrc} type="video/mp4" />
-          </video>
+          />
         )}
 
         <div className="mp-progress" aria-hidden="true">
