@@ -16,6 +16,7 @@ type Props = {
 
 export function ModulePlayer({
   slug,
+  videoSrc,
   iframeSrc,
   durationSec = 0,
   poster,
@@ -46,7 +47,8 @@ export function ModulePlayer({
     const v = videoRef.current;
     if (!v) return;
 
-    const src = `/api/video/${slug}/master`;
+    const src = videoSrc ?? "";
+    if (!src) return;
 
     if (Hls.isSupported()) {
       const hls = new Hls({
@@ -73,7 +75,7 @@ export function ModulePlayer({
       // Safari HLS nativo
       v.src = src;
     }
-  }, [slug, iframeSrc]);
+  }, [slug, iframeSrc, videoSrc]);
 
   // Native <video> progress tracking
   useEffect(() => {

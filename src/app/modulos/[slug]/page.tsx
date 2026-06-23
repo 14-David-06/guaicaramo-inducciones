@@ -150,7 +150,9 @@ export default async function ModulePage({
 
             <ModulePlayer
               slug={m.slug}
-              videoSrc={m.blobPath ? `/api/video/${m.slug}` : undefined}
+              videoSrc={m.blobPath
+                ? `${process.env.R2_PUBLIC_URL}/hls/${m.blobPath.replace(".mp4", "")}/master.m3u8`
+                : undefined}
               iframeSrc={m.blobPath ? undefined : m.iframeSrc}
               durationSec={m.durationSec}
               poster={m.bg}
