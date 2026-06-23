@@ -7,6 +7,9 @@ import { Footer } from "@/components/landing/Footer";
 import { MODULES } from "@/lib/modules-data";
 import { ModulePlayer } from "@/components/modulo/ModulePlayer";
 import { ModuleSequenceGuard } from "@/components/modulo/ModuleSequenceGuard";
+import { generateVideoToken } from "@/lib/video-token";
+
+export const dynamic = "force-dynamic";
 
 type Params = { slug: string };
 
@@ -39,6 +42,11 @@ export default async function ModulePage({
   const m = MODULES[idx];
   const nextHref = `/modulos/${m.slug}/firmar`;
   const nextLabel = "Firmar y generar certificado";
+
+  const videoToken = m.blobPath ? await generateVideoToken() : null;
+  const videoSrc = videoToken && m.blobPath
+    ? `${process.env.VIDEO_WORKER_URL}/hls/${m.blobPath.replace(".mp4", "")}/master.m3u8?t=${videoToken}`
+    : undefined;
 
   return (
     <>
@@ -150,9 +158,7 @@ export default async function ModulePage({
 
             <ModulePlayer
               slug={m.slug}
-              videoSrc={m.blobPath
-                ? `${process.env.R2_PUBLIC_URL}/hls/${m.blobPath.replace(".mp4", "")}/master.m3u8`
-                : undefined}
+              videoSrc={videoSrc}
               iframeSrc={m.blobPath ? undefined : m.iframeSrc}
               durationSec={m.durationSec}
               poster={m.bg}
