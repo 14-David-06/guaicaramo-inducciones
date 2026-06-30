@@ -27,6 +27,24 @@ function normalizeCedula(raw: string) {
   return raw.replace(/\D/g, "");
 }
 
+// Exports the signature as a small PNG data URL. The on-screen canvas is HiDPI
+// (width × devicePixelRatio), which produces a large PNG; once encrypted it can
+// exceed Airtable's 100 000-char cell limit. Downscaling to a fixed max width
+// keeps the stored (encrypted) signature well under that limit while preserving
+// transparency so the certificate render is unchanged.
+function exportSignaturePng(src: HTMLCanvasElement, maxWidth = 600): string | null {
+  const scale = Math.min(1, maxWidth / src.width);
+  const w = Math.max(1, Math.round(src.width * scale));
+  const h = Math.max(1, Math.round(src.height * scale));
+  const off = document.createElement("canvas");
+  off.width = w;
+  off.height = h;
+  const ctx = off.getContext("2d");
+  if (!ctx) return null;
+  ctx.drawImage(src, 0, 0, w, h);
+  return off.toDataURL("image/png");
+}
+
 function formatCedula(digits: string) {
   return digits.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 }
@@ -246,7 +264,8 @@ export function SignatureForm({
 
     setSubmitting(true);
     try {
-      const firma = canvasRef.current?.toDataURL("image/png") ?? "";
+      const canvas = canvasRef.current;
+      const firma = canvas ? exportSignaturePng(canvas) ?? "" : "";
       if (!firma.startsWith("data:image/png;base64,")) {
         setError("No se pudo capturar la firma. Intente de nuevo.");
         return;

@@ -57,12 +57,39 @@ export function ModulePlayer({
         maxBufferLength: 30,
       });
       hlsRef.current = hls;
-      hls.on(Hls.Events.ERROR, (_evt, data) => {
-        if (data.fatal) {
-          console.error("[HLS] fatal error", data.type, data.details);
-          if (data.type === Hls.ErrorTypes.NETWORK_ERROR) hls.startLoad();
-          else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) hls.recoverMediaError();
-          else hls.destroy();
+      // Escalating media-error recovery (per hls.js docs): first try a plain
+      // recover, then swap the audio codec, and only destroy if errors keep
+      // firing within a short window. Avoids the infinite recover loop that a
+      // bare recoverMediaError() causes on a persistent bufferAppendError.
+      let lastRecover = 0;
+      let lastSwap = 0;
+      const recoverMedia = () => {
+        const now = performance.now();
+        if (!lastRecover || now - lastRecover > 3000) {
+          lastRecover = now;
+          hls.recoverMediaError();
+        } else if (!lastSwap || now - lastSwap > 3000) {
+          lastSwap = now;
+          hls.swapAudioCodec();
+          hls.recoverMediaError();
+        } else {
+          console.error("[HLS] unrecoverable media error", data?.details);
+          hls.destroy();
+        }
+      };
+      let data: { details?: string } | undefined;
+      hls.on(Hls.Events.ERROR, (_evt, d) => {
+        if (!d.fatal) return;
+        data = d;
+        if (d.type === Hls.ErrorTypes.NETWORK_ERROR) {
+          console.warn("[HLS] network error, retrying", d.details);
+          hls.startLoad();
+        } else if (d.type === Hls.ErrorTypes.MEDIA_ERROR) {
+          console.warn("[HLS] media error, recovering", d.details);
+          recoverMedia();
+        } else {
+          console.error("[HLS] fatal error", d.type, d.details);
+          hls.destroy();
         }
       });
       hls.loadSource(src);

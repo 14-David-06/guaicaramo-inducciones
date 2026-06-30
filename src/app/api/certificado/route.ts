@@ -14,7 +14,11 @@ import { COOKIE_NAME } from "@/lib/session-cookie";
 import { authErrorResponse, checkSession } from "@/lib/api-auth";
 import { isSameOrigin } from "@/lib/http-security";
 
-const MAX_FIRMA_BYTES = 200_000; // ~200 KB raw base64 PNG
+// El campo "Firma Colaborador" en Airtable es texto (máx. 100 000 caracteres).
+// La firma se cifra (AES-GCM) y se codifica en base64 antes de guardarla, lo que
+// infla el tamaño ~33%. Limitamos el data URL a 70 000 caracteres para que la
+// firma cifrada quede holgadamente por debajo del límite de Airtable.
+const MAX_FIRMA_BYTES = 70_000;
 const FIRMA_DATA_URL_RE = /^data:image\/png;base64,[A-Za-z0-9+/=]+$/;
 
 export const runtime = "nodejs";
