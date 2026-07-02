@@ -298,7 +298,7 @@ export function SignatureForm({
       }
       if (!res.ok) {
         setError(
-          "No fue posible registrar el certificado. Intente de nuevo."
+          "No fue posible registrar el certificado. Intenta de nuevo haciendo la firma mas pequeña."
         );
         return;
       }
