@@ -1930,7 +1930,7 @@ a.mcard {
 .certificate {
   width: 100%;
   padding: 14px;
-  background: #2e7d32;
+  background: var(--cert-primary, #2e7d32);
   position: relative;
   font-family: "Inter", sans-serif;
 }
@@ -1942,7 +1942,7 @@ a.mcard {
 
 .chevron-band,
 .chevron-band-bottom {
-  background: #2e7d32;
+  background: var(--cert-primary, #2e7d32);
   height: 46px;
   position: relative;
   overflow: hidden;
@@ -1978,7 +1978,7 @@ a.mcard {
 
 .orange-line {
   height: 5px;
-  background: linear-gradient(to right, #e65100, #ff8f00, #e65100);
+  background: linear-gradient(to right, var(--cert-accent, #e65100), var(--cert-accent-alt, #ff8f00), var(--cert-accent, #e65100));
 }
 
 .cert-content {
@@ -1992,8 +1992,8 @@ a.mcard {
   transform: translate(-50%, -50%);
   width: 260px; height: 260px;
   border-radius: 50%;
-  border: 1px solid rgba(46,125,50,0.07);
-  box-shadow: 0 0 0 30px rgba(46,125,50,0.03), 0 0 0 60px rgba(46,125,50,0.02);
+  border: 1px solid rgba(var(--cert-watermark-rgb, 46,125,50),0.07);
+  box-shadow: 0 0 0 30px rgba(var(--cert-watermark-rgb, 46,125,50),0.03), 0 0 0 60px rgba(var(--cert-watermark-rgb, 46,125,50),0.02);
   pointer-events: none;
   display: flex;
   align-items: center;
@@ -2003,17 +2003,24 @@ a.mcard {
   font-family: var(--font-display, "Playfair Display"), serif;
   font-size: 96px;
   font-weight: 700;
-  color: rgba(46,125,50,0.05);
+  color: rgba(var(--cert-watermark-rgb, 46,125,50),0.05);
   line-height: 1;
   user-select: none;
 }
 
+.cert-logo {
+  display: block;
+  height: 72px;
+  max-width: 100%;
+  object-fit: contain;
+  margin: 0 auto 10px;
+}
 .cert-empresa {
   font-size: 30px;
   font-weight: 800;
   letter-spacing: 0.24em;
   text-transform: uppercase;
-  color: #2e7d32;
+  color: var(--cert-primary, #2e7d32);
   text-align: center;
   margin-bottom: 10px;
 }
@@ -2029,7 +2036,7 @@ a.mcard {
   font-family: var(--font-display, "Playfair Display"), serif;
   font-size: 32px;
   font-weight: 700;
-  color: #1b5e20;
+  color: var(--cert-primary-dark, #1b5e20);
   text-align: center;
   letter-spacing: 0.01em;
   line-height: 1.1;
@@ -2040,7 +2047,7 @@ a.mcard {
   font-size: 42px;
   font-style: italic;
   font-weight: 500;
-  color: #1b5e20;
+  color: var(--cert-primary-dark, #1b5e20);
   text-align: center;
   line-height: 1.1;
   margin-bottom: 4px;
@@ -2061,7 +2068,7 @@ a.mcard {
   margin: 0 auto 20px;
   max-width: 720px;
 }
-.cert-body-text strong { color: #1b5e20; }
+.cert-body-text strong { color: var(--cert-primary-dark, #1b5e20); }
 
 .h-rule {
   display: flex;
@@ -2078,7 +2085,7 @@ a.mcard {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: #e65100;
+  background: var(--cert-accent, #e65100);
   flex-shrink: 0;
   display: block;
 }
@@ -2107,7 +2114,7 @@ a.mcard {
 .sig-name {
   font-size: 11.5px;
   font-weight: 700;
-  color: #1b5e20;
+  color: var(--cert-primary-dark, #1b5e20);
   text-align: center;
 }
 .sig-role {
@@ -2132,7 +2139,7 @@ a.mcard {
   flex-wrap: wrap;
 }
 .date-val {
-  color: #2e7d32;
+  color: var(--cert-primary, #2e7d32);
   font-weight: 700;
   font-size: 11px;
 }

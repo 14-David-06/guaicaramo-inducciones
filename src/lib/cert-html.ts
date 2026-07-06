@@ -4,6 +4,8 @@
  * receives the exact same certificate design by email.
  */
 
+import { getBrand, DEFAULT_COLORS, type Empresa } from "./brands";
+
 export interface CertHtmlData {
   nombre: string;
   cedula: string;
@@ -15,6 +17,8 @@ export interface CertHtmlData {
   issuedAt: string;
   firmaPng: string;    // data URL — employee signature
   hrFirmaPng?: string; // data URL — HR signature (server-side only, never sent to browser)
+  empresa?: Empresa;   // marca a aplicar; por defecto "guaicaramo" (sin cambios)
+  logoDataUri?: string; // data URI del logo de la empresa (incrustado en runtime para el PDF)
 }
 
 const MONTHS = [
@@ -45,9 +49,18 @@ export function generateCertHtml(data: CertHtmlData): Buffer {
   const nombre     = data.nombre.trim() || "Colaborador Guaicaramo";
   const topicsLine = data.topics.join(", ");
   const fechaLarga = formatFechaLarga(data.issuedAt);
+  // Marca (empresa). Guaicaramo usa los valores por defecto → salida idéntica.
+  const brand = getBrand(data.empresa ?? "guaicaramo");
   const certTitle  = data.moduloSlug === "introduccion"
-    ? "Certificado · Inducción/Reinducción"
+    ? `Certificado · ${brand.procesoTitulo}`
     : `Certificado · Módulo ${data.moduloNum} · ${data.moduloTitle}`;
+  const c     = brand.colors ?? DEFAULT_COLORS;
+  const logoSrc = data.logoDataUri ?? brand.logoDataUri;
+  const logoH   = brand.logoHeight ?? 92;
+  // Bloque de empresa: logo si existe; si no, el texto tipográfico original.
+  const empresaBlock = logoSrc
+    ? `<img src="${logoSrc}" alt="${brand.nombre}" class="cert-logo" style="height:${logoH}px">`
+    : `<div class="cert-empresa">${brand.nombre}</div>`;
 
   // Build chevron HTML (16 items each side)
   const chevItems  = Array.from({ length: 16 }).map(() => `<span class="chev-item"></span>`).join("");
@@ -64,37 +77,38 @@ export function generateCertHtml(data: CertHtmlData): Buffer {
 *{margin:0;padding:0;box-sizing:border-box;}
 body{background:#f0f2f0;display:flex;justify-content:center;padding:32px 16px;font-family:'Inter',sans-serif;}
 .cert-wrap{width:980px;max-width:100%;}
-.certificate{width:100%;padding:14px;background:#2e7d32;position:relative;}
+.certificate{width:100%;padding:14px;background:${c.primary};position:relative;}
 .cert-inner{background:#fff;position:relative;overflow:hidden;}
-.chevron-band,.chevron-band-bottom{background:#2e7d32;height:46px;position:relative;overflow:hidden;display:flex;align-items:center;padding:0 32px;}
+.chevron-band,.chevron-band-bottom{background:${c.primary};height:46px;position:relative;overflow:hidden;display:flex;align-items:center;padding:0 32px;}
 .chevron-band{justify-content:flex-end;}
 .chevrons{position:absolute;right:0;top:0;bottom:0;display:flex;align-items:center;padding-right:8px;}
 .chevrons-bottom{position:absolute;left:0;top:0;bottom:0;display:flex;align-items:center;padding-left:8px;}
 .chev-item{width:0;height:0;border-top:23px solid transparent;border-bottom:23px solid transparent;border-left:18px solid rgba(255,255,255,0.22);margin-left:3px;}
 .chev-item-l{width:0;height:0;border-top:23px solid transparent;border-bottom:23px solid transparent;border-right:18px solid rgba(255,255,255,0.22);margin-right:3px;}
-.orange-line{height:5px;background:linear-gradient(to right,#e65100,#ff8f00,#e65100);}
+.orange-line{height:5px;background:linear-gradient(to right,${c.accent},${c.accentAlt},${c.accent});}
 .cert-content{padding:28px 72px 16px;position:relative;}
-.watermark{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:260px;height:260px;border-radius:50%;border:1px solid rgba(46,125,50,0.07);box-shadow:0 0 0 30px rgba(46,125,50,0.03),0 0 0 60px rgba(46,125,50,0.02);pointer-events:none;display:flex;align-items:center;justify-content:center;}
-.watermark-text{font-family:'Playfair Display',serif;font-size:96px;font-weight:700;color:rgba(46,125,50,0.05);line-height:1;user-select:none;}
-.cert-empresa{font-family:'Playfair Display',serif;font-size:58px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#1b5e20;text-align:center;margin-bottom:18px;line-height:1.05;}
-.cert-title{font-family:'Playfair Display',serif;font-size:38px;font-weight:700;color:#1b5e20;text-align:center;letter-spacing:0.01em;line-height:1.05;margin-bottom:24px;}
+.watermark{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:260px;height:260px;border-radius:50%;border:1px solid rgba(${c.watermarkRgb},0.07);box-shadow:0 0 0 30px rgba(${c.watermarkRgb},0.03),0 0 0 60px rgba(${c.watermarkRgb},0.02);pointer-events:none;display:flex;align-items:center;justify-content:center;}
+.watermark-text{font-family:'Playfair Display',serif;font-size:96px;font-weight:700;color:rgba(${c.watermarkRgb},0.05);line-height:1;user-select:none;}
+.cert-logo{display:block;max-width:340px;max-height:110px;object-fit:contain;margin:0 auto 18px;}
+.cert-empresa{font-family:'Playfair Display',serif;font-size:58px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:${c.primaryDark};text-align:center;margin-bottom:18px;line-height:1.05;}
+.cert-title{font-family:'Playfair Display',serif;font-size:38px;font-weight:700;color:${c.primaryDark};text-align:center;letter-spacing:0.01em;line-height:1.05;margin-bottom:24px;}
 .constar{font-size:14px;color:#888;text-align:center;margin-bottom:14px;letter-spacing:0.05em;}
-.cert-name{font-family:'Playfair Display',serif;font-size:46px;font-style:italic;font-weight:500;color:#1b5e20;text-align:center;line-height:1.1;margin-bottom:12px;}
+.cert-name{font-family:'Playfair Display',serif;font-size:46px;font-style:italic;font-weight:500;color:${c.primaryDark};text-align:center;line-height:1.1;margin-bottom:12px;}
 .cert-cedula{font-size:14px;color:#444;font-weight:600;text-align:center;margin-bottom:20px;letter-spacing:0.06em;}
 .cert-body-text{font-size:15.5px;color:#555;line-height:1.7;text-align:center;margin:0 auto 10px;max-width:780px;}
-.cert-body-text strong{color:#1b5e20;}
+.cert-body-text strong{color:${c.primaryDark};}
 .h-rule{display:flex;align-items:center;gap:10px;margin-bottom:16px;}
 .h-rule span{flex:1;height:1px;background:#e8e8e8;}
-.h-rule i{width:7px;height:7px;border-radius:50%;background:#e65100;flex-shrink:0;display:block;}
+.h-rule i{width:7px;height:7px;border-radius:50%;background:${c.accent};flex-shrink:0;display:block;}
 .sig-row{display:flex;justify-content:space-between;width:100%;gap:20px;margin-bottom:18px;}
 .sig-block{display:flex;flex-direction:column;align-items:center;flex:1;gap:4px;}
 .sig-space{height:90px;}
 .sig-img{max-height:90px;max-width:240px;object-fit:contain;}
 .sig-line{width:80%;max-width:170px;height:1px;background:#999;}
-.sig-name{font-size:11.5px;font-weight:700;color:#1b5e20;text-align:center;}
+.sig-name{font-size:11.5px;font-weight:700;color:${c.primaryDark};text-align:center;}
 .sig-role{font-size:9.5px;color:#bbb;text-transform:uppercase;letter-spacing:0.08em;text-align:center;}
 .bottom-info{display:flex;align-items:center;justify-content:space-between;font-size:10px;color:#bbb;letter-spacing:0.06em;border-top:1px solid #eee;padding-top:10px;margin-top:4px;gap:12px;flex-wrap:wrap;}
-.date-val{color:#2e7d32;font-weight:700;font-size:11px;}
+.date-val{color:${c.primary};font-weight:700;font-size:11px;}
 @media print{
   html,body{height:202mm!important;margin:0!important;padding:0!important;display:block!important;}
   .cert-wrap{height:100%!important;max-width:100%!important;display:flex!important;flex-direction:column!important;}
@@ -132,9 +146,9 @@ body{background:#f0f2f0;display:flex;justify-content:center;padding:32px 16px;fo
       <div class="orange-line"></div>
       <div class="cert-content">
         <div class="watermark" aria-hidden="true">
-          <div class="watermark-text">G</div>
+          <div class="watermark-text">${brand.watermarkLetter}</div>
         </div>
-        <div class="cert-empresa">Guaicaramo S.A.S.</div>
+        ${empresaBlock}
         <div class="constar">Se hace constar que</div>
         <div class="cert-title">${certTitle}</div>
         <div class="cert-name">${nombre}</div>
@@ -142,7 +156,7 @@ body{background:#f0f2f0;display:flex;justify-content:center;padding:32px 16px;fo
         <p class="cert-body-text">
           Completó con éxito el módulo
           <strong>${data.moduloNum} · ${data.moduloTitle}</strong>
-          del proceso de Inducción / Reinducción de Guaicaramo S.A.S., en
+          del proceso de ${brand.procesoCuerpo} ${brand.procesoLabel}, en
           los siguientes temas: ${topicsLine}.
         </p>
         <div class="h-rule"><span></span><i></i><span></span></div>
@@ -153,7 +167,7 @@ body{background:#f0f2f0;display:flex;justify-content:center;padding:32px 16px;fo
               : `<div class="sig-space"></div>`}
             <div class="sig-line"></div>
             <div class="sig-name">Gestión Humana</div>
-            <div class="sig-role">Guaicaramo S.A.S.</div>
+            <div class="sig-role">${brand.nombre}</div>
           </div>
           <div class="sig-block">
             ${data.firmaPng ? `<img src="${data.firmaPng}" alt="Firma del participante" class="sig-img">` : `<div class="sig-space"></div>`}
@@ -163,7 +177,7 @@ body{background:#f0f2f0;display:flex;justify-content:center;padding:32px 16px;fo
           </div>
         </div>
         <div class="bottom-info">
-          <span>Guaicaramo S.A.S. &nbsp;·&nbsp; Gestión Humana &nbsp;·&nbsp; Código <strong>${data.codigo}</strong></span>
+          <span>${brand.nombre} &nbsp;·&nbsp; Gestión Humana &nbsp;·&nbsp; Código <strong>${data.codigo}</strong></span>
           <span>Fecha de emisión: <span class="date-val">${fechaLarga}</span></span>
         </div>
       </div>

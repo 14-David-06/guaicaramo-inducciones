@@ -42,3 +42,6 @@ next-env.d.ts
 
 # local airtable dumps (contienen datos personales)
 .airtable-*.json
+
+# Certificado de prueba (local)
+certificado-prueba-*.pdf

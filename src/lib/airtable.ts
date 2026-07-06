@@ -1,4 +1,5 @@
 import "server-only";
+import { resolveEmpresa, type Empresa } from "./brands";
 
 function getEnv(name: string) {
   const v = process.env[name];
@@ -18,6 +19,7 @@ const F = {
   personal: {
     empleado: () => getEnv("AIRTABLE_FIELD_PERSONAL_EMPLEADO_ID"),
     nombre: () => getEnv("AIRTABLE_FIELD_PERSONAL_NOMBRE_ID"),
+    empresa: () => getEnv("AIRTABLE_FIELD_PERSONAL_EMPRESA_ID"),
   },
   // Slug → env-var name for the Personal module-completion checkbox fields.
   moduleCheckboxEnvKey: {
@@ -49,7 +51,7 @@ export function normalizeCedula(raw: string) {
   return raw.replace(/\D/g, "");
 }
 
-export type Empleado = { recordId: string; nombre: string };
+export type Empleado = { recordId: string; nombre: string; empresa: Empresa };
 
 /**
  * Looks up a Personal record by cedula. Returns recordId + nombre,
@@ -63,13 +65,15 @@ export async function findEmpleado(
 
   const empleadoFid = F.personal.empleado();
   const nombreFid = F.personal.nombre();
+  const empresaFid = F.personal.empresa();
 
   const formula = encodeURIComponent(`{${empleadoFid}}=${digits}`);
   const url = airtableUrl(
     getPersonalTableId(),
     `?filterByFormula=${formula}&maxRecords=1` +
       `&returnFieldsByFieldId=true` +
-      `&fields%5B%5D=${empleadoFid}&fields%5B%5D=${nombreFid}`
+      `&fields%5B%5D=${empleadoFid}&fields%5B%5D=${nombreFid}` +
+      `&fields%5B%5D=${empresaFid}`
   );
 
   const res = await fetch(url, {
@@ -86,12 +90,20 @@ export async function findEmpleado(
   };
   const r = data.records?.[0];
   if (!r) return null;
+  // El campo Empresa es singleSelect: Airtable lo devuelve como string con
+  // returnFieldsByFieldId, pero puede venir como {name} — resolveEmpresa maneja ambos.
+  const empresaRaw = r.fields[empresaFid];
+  const empresaName =
+    empresaRaw && typeof empresaRaw === "object"
+      ? (empresaRaw as { name?: string }).name
+      : (empresaRaw as string | undefined);
   return {
     recordId: r.id,
     nombre: String(r.fields[nombreFid] ?? "")
       .replace(/[\r\n\t\x00-\x1f\x7f]/g, " ")
       .replace(/\s+/g, " ")
       .trim(),
+    empresa: resolveEmpresa(empresaName),
   };
 }
 

@@ -5,10 +5,30 @@
  * remote Chromium download.
  */
 
+import { readFile } from "node:fs/promises";
+import path from "node:path";
 import chromium from "@sparticuz/chromium-min";
 import puppeteer from "puppeteer-core";
 import { generateCertHtml, type CertHtmlData } from "./cert-html";
+import { getBrand } from "./brands";
 import { decryptString } from "./crypto";
+
+// Cache del logo por empresa (data URI) — se lee del disco una sola vez por proceso.
+const logoCache = new Map<string, string | null>();
+
+async function loadLogoDataUri(publicPath: string): Promise<string | null> {
+  if (logoCache.has(publicPath)) return logoCache.get(publicPath) ?? null;
+  let uri: string | null = null;
+  try {
+    const file = path.join(process.cwd(), "public", publicPath.replace(/^\//, ""));
+    const buf = await readFile(file);
+    uri = `data:image/png;base64,${buf.toString("base64")}`;
+  } catch {
+    uri = null; // sin logo → generateCertHtml cae al texto del nombre
+  }
+  logoCache.set(publicPath, uri);
+  return uri;
+}
 
 // Pinned Chromium build that matches @sparticuz/chromium-min expectations.
 // Override in production env if needed via CHROMIUM_REMOTE_EXEC_PATH.
@@ -41,7 +61,13 @@ export async function generateCertPdfBuffer(data: CertHtmlData): Promise<Buffer>
     }
   }
 
-  const html = generateCertHtml({ ...data, hrFirmaPng }).toString("utf-8");
+  // Logo de la empresa (si la marca define uno) incrustado como base64 para el PDF.
+  const brand = getBrand(data.empresa ?? "guaicaramo");
+  const logoDataUri = brand.logoPublicPath
+    ? (await loadLogoDataUri(brand.logoPublicPath)) ?? undefined
+    : undefined;
+
+  const html = generateCertHtml({ ...data, hrFirmaPng, logoDataUri }).toString("utf-8");
 
   const executablePath = await getExecutablePath();
 

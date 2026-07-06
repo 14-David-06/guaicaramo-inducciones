@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import Link from "next/link";
 import { findModule } from "@/lib/modules";
+import { getBrand, resolveEmpresa } from "@/lib/brands";
 
 type StoredCert = {
   code: string;
@@ -10,6 +11,7 @@ type StoredCert = {
   cedula: string;
   nombre?: string;
   firmaPng?: string;
+  empresa?: string;
 };
 
 const STORAGE_CERT = (slug: string) => `gc-mod-${slug}-cert`;
@@ -173,6 +175,19 @@ export function Certificate({ slug }: { slug: string }) {
   const nombre = cert.nombre?.trim() || "Colaborador Guaicaramo";
   const topicsLine = mod.topics.join(", ");
 
+  // Marca (empresa). Guaicaramo → sin overrides, render idéntico al original.
+  const brand = getBrand(resolveEmpresa(cert.empresa));
+  // Overrides de color vía variables CSS; solo cuando la marca define colores.
+  const brandStyle: CSSProperties = brand.colors
+    ? ({
+        "--cert-primary": brand.colors.primary,
+        "--cert-primary-dark": brand.colors.primaryDark,
+        "--cert-accent": brand.colors.accent,
+        "--cert-accent-alt": brand.colors.accentAlt,
+        "--cert-watermark-rgb": brand.colors.watermarkRgb,
+      } as CSSProperties)
+    : {};
+
   return (
     <div className="cert-page">
       <div className="cert-toolbar">
@@ -194,7 +209,7 @@ export function Certificate({ slug }: { slug: string }) {
         </div>
       </div>
 
-      <div className="cert-wrap">
+      <div className="cert-wrap" style={brandStyle}>
         <div className="certificate">
           <div className="cert-inner">
             <div className="chevron-band">
@@ -208,13 +223,23 @@ export function Certificate({ slug }: { slug: string }) {
 
             <div className="cert-content">
               <div className="watermark" aria-hidden="true">
-                <div className="watermark-text">G</div>
+                <div className="watermark-text">{brand.watermarkLetter}</div>
               </div>
 
-              <div className="cert-empresa">Guaicaramo S.A.S.</div>
+              {brand.logoPublicPath ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={brand.logoPublicPath}
+                  alt={brand.nombre}
+                  className="cert-logo"
+                  style={brand.logoHeight ? { height: brand.logoHeight } : undefined}
+                />
+              ) : (
+                <div className="cert-empresa">{brand.nombre}</div>
+              )}
               <div className="cert-title">
                 {slug === "introduccion"
-                  ? "Certificado · Inducción/Reinducción"
+                  ? `Certificado · ${brand.procesoTitulo}`
                   : `Certificado · Módulo ${mod.num} · ${mod.title}`}
               </div>
               <div className="constar">Se hace constar que</div>
@@ -228,7 +253,7 @@ export function Certificate({ slug }: { slug: string }) {
                 <strong>
                   {mod.num} · {mod.title}
                 </strong>{" "}
-                del proceso de Inducción / Reinducción de Guaicaramo S.A.S., en
+                del proceso de {brand.procesoCuerpo} {brand.procesoLabel}, en
                 los siguientes temas: {topicsLine}.
               </p>
 
@@ -253,7 +278,7 @@ export function Certificate({ slug }: { slug: string }) {
                   )}
                   <div className="sig-line" />
                   <div className="sig-name">Gestión Humana</div>
-                  <div className="sig-role">Guaicaramo S.A.S.</div>
+                  <div className="sig-role">{brand.nombre}</div>
                 </div>
                 <div className="sig-block">
                   {cert.firmaPng ? (
@@ -273,7 +298,7 @@ export function Certificate({ slug }: { slug: string }) {
 
               <div className="bottom-info">
                 <span>
-                  Guaicaramo S.A.S. &nbsp;·&nbsp; Gestión Humana &nbsp;·&nbsp;
+                  {brand.nombre} &nbsp;·&nbsp; Gestión Humana &nbsp;·&nbsp;
                   Código <strong>{cert.code}</strong>
                 </span>
                 <span>

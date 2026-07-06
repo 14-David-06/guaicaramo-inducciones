@@ -138,6 +138,7 @@ export async function POST(req: Request) {
       emitidoEn: result.emitidoEn,
       nombre: empleado.nombre,
       firmaPng: firma,
+      empresa: empleado.empresa,
     };
 
     // Send email notification with certificate PDF attachment.
@@ -160,6 +161,7 @@ export async function POST(req: Request) {
           codigo: result.codigo,
           issuedAt: result.emitidoEn,
           firmaPng: firma,
+          empresa: empleado.empresa,
         });
       } catch (pdfErr) {
         console.error("[/api/certificado] PDF generation failed:", pdfErr);
@@ -171,6 +173,7 @@ export async function POST(req: Request) {
             nombrePersona: empleado.nombre,
             modulo: moduloNum,
             pdfBuffer: certPdfBuffer,
+            empresa: empleado.empresa,
           });
         } catch (uploadErr) {
           console.error("[/api/certificado] OneDrive upload failed:", uploadErr);

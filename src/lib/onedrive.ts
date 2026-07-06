@@ -105,19 +105,28 @@ async function ensurePath(token: string, user: string, folderPath: string): Prom
   }
 }
 
+// Etiqueta de carpeta raíz por empresa. Cada empresa guarda sus certificados
+// en su propio subárbol dentro de OneDrive.
+const EMPRESA_FOLDER: Record<string, string> = {
+  guaicaramo: "GUAICARAMO",
+  tagua: "TAGUA",
+};
+
 export interface SubirCertificadoOptions {
   nombrePersona: string;
   modulo: string;
   pdfBuffer: Buffer;
+  empresa?: string; // "guaicaramo" (por defecto) | "tagua"
 }
 
 export async function subirCertificado(options: SubirCertificadoOptions): Promise<void> {
   const cfg = getConfig();
   const token = await getAccessToken(cfg);
 
+  const empresaFolder = EMPRESA_FOLDER[options.empresa ?? "guaicaramo"] ?? EMPRESA_FOLDER.guaicaramo;
   const año           = new Date().getFullYear();
   const nombreCarpeta = sanitizeFolderName(options.nombrePersona);
-  const folderPath    = `Certificados/CERTIFICADOS ${año}/${nombreCarpeta}`;
+  const folderPath    = `Certificados/${empresaFolder}/CERTIFICADOS ${año}/${nombreCarpeta}`;
   const filename      = `certificado_modulo_${options.modulo}.pdf`;
   const filePath      = `${folderPath}/${filename}`;
 

@@ -92,6 +92,7 @@ export function SignatureForm({
     cedula: string;
     nombre?: string;
     firmaPng?: string;
+    empresa?: string;
   } | null>(null);
 
   // Mount: read existing state
@@ -114,6 +115,7 @@ export function SignatureForm({
           cedula: string;
           nombre?: string;
           firmaPng?: string;
+          empresa?: string;
         };
         setCert(parsed);
         setStep("done");
@@ -308,6 +310,7 @@ export function SignatureForm({
         emitidoEn: string;
         nombre?: string;
         firmaPng?: string;
+        empresa?: string;
       };
       const payload = {
         code: data.codigo,
@@ -315,6 +318,7 @@ export function SignatureForm({
         cedula: verifiedCedula,
         nombre: data.nombre,
         firmaPng: data.firmaPng ?? firma,
+        empresa: data.empresa,
       };
 
       try {
