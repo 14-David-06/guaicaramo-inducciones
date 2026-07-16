@@ -586,7 +586,7 @@ export function ModulesSection({
                   </svg>
                 </div>
                 <p className="modules-lock-text">
-                  Identifícate para acceder a los módulos de inducción.
+                  Identifícate aqui para acceder a los módulos de inducción.
                 </p>
                 <button
                   className="modules-lock-btn"

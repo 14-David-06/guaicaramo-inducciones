@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import {
   crearCertificado,
   findEmpleado,
+  getCertificadosDelEmpleado,
   marcarModuloCompletado,
   normalizeCedula,
 } from "@/lib/airtable";
@@ -110,6 +111,40 @@ export async function POST(req: Request) {
         { error: "No encontramos su registro en la base de colaboradores." },
         { status: 404 }
       );
+    }
+
+    // --- Validación de progreso secuencial (fuente de verdad: certificados en Airtable) ---
+    // Impide emitir el certificado de un módulo si faltan los anteriores en orden.
+    const orden = MODULES.map((mm) => mm.slug);
+    const idxModulo = orden.indexOf(moduloSlug);
+    if (idxModulo === -1) {
+      return NextResponse.json({ error: "Módulo inválido" }, { status: 400 });
+    }
+    if (idxModulo > 0) {
+      const completados = await getCertificadosDelEmpleado(empleado.recordId).catch(
+        () => null,
+      );
+      // fail-closed: si no se puede verificar el progreso, no se emite.
+      if (completados === null) {
+        return NextResponse.json(
+          { error: "No fue posible verificar tu progreso. Intenta de nuevo." },
+          { status: 503 },
+        );
+      }
+      const faltantes = orden
+        .slice(0, idxModulo)
+        .filter((s) => !completados.includes(s));
+      if (faltantes.length > 0) {
+        return NextResponse.json(
+          {
+            error:
+              "Debes completar y firmar los módulos anteriores en orden antes de este.",
+            code: "sequence",
+            faltantes,
+          },
+          { status: 409 },
+        );
+      }
     }
 
     const issuedAt = new Date().toISOString();

@@ -10,9 +10,12 @@ export function ModuleSequenceGuard({ slug }: { slug: string }) {
   useEffect(() => {
     const idx = MODULES.findIndex((m) => m.slug === slug);
     if (idx <= 0) return; // first module is always accessible
-    const prevSlug = MODULES[idx - 1].slug;
     try {
-      if (localStorage.getItem(`gc-mod-${prevSlug}-completed`) !== "1") {
+      // Todos los módulos anteriores deben estar completados, no solo el previo.
+      const faltaAlguno = MODULES.slice(0, idx).some(
+        (m) => localStorage.getItem(`gc-mod-${m.slug}-completed`) !== "1",
+      );
+      if (faltaAlguno) {
         router.replace("/#modulos");
       }
     } catch {

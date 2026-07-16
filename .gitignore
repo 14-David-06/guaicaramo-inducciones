@@ -45,3 +45,6 @@ next-env.d.ts
 
 # Certificado de prueba (local)
 certificado-prueba-*.pdf
+
+# Auditoría con PII (local)
+auditoria-huecos-certificados.csv

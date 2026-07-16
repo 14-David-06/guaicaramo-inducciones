@@ -6,6 +6,7 @@ import { Header } from "@/components/landing/Header";
 import { Footer } from "@/components/landing/Footer";
 import { MODULES } from "@/lib/modules-data";
 import { SignatureForm } from "@/components/modulo/SignatureForm";
+import { ModuleSequenceGuard } from "@/components/modulo/ModuleSequenceGuard";
 
 type Params = { slug: string };
 
@@ -44,6 +45,7 @@ export default async function SignPage({
 
   return (
     <>
+      <ModuleSequenceGuard slug={m.slug} />
       <Header showNav={false} />
 
       <header className="mp-hero sign-hero">

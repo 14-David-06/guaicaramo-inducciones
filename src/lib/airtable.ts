@@ -185,10 +185,12 @@ export async function getCertificadosDelEmpleado(
   const moduloVerFid  = F.cert.moduloVersion();
 
   // Step 1 — get the list of certificate record IDs from the Personal record.
+  // NOTE: el endpoint GET de un registro único NO acepta el parámetro fields[]
+  // (devuelve 422). Se pide el registro completo y se lee el campo por su ID.
   const r1 = await fetch(
     `https://api.airtable.com/v0/${getBaseId()}/${getPersonalTableId()}` +
     `/${encodeURIComponent(personalRecordId)}` +
-    `?returnFieldsByFieldId=true&fields%5B%5D=${certsFid}`,
+    `?returnFieldsByFieldId=true`,
     { headers: authHeaders(), cache: "no-store" }
   );
   if (!r1.ok) throw new Error(`Personal fetch ${r1.status}`);
